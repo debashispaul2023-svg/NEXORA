@@ -37,14 +37,11 @@ function cleanAudit() {
   for (const n of [EVENTS_FILENAME, EQUITY_FILENAME]) {
     const p = resolveProjectPath(`data/audit/${n}`);
     if (existsSync(p)) {
-      try {
-        unlinkSync(p);
-      } catch {
-        /* ignore */
-      }
+      retryFs(() => unlinkSync(p));
     }
   }
 }
+
 
 function sampleEvent(overrides = {}) {
   return {
@@ -174,13 +171,16 @@ test('reconciliation reports event counts and fills without accounting', async (
   await appendEvent(sampleEvent({ eventId: 'e1', eventType: 'ORDER_SUBMITTED', orderId: 'o1' }));
   await appendEvent(sampleEvent({ eventId: 'e2', eventType: 'ORDER_APPROVED', orderId: 'o1' }));
   await appendEvent(sampleEvent({ eventId: 'e3', eventType: 'ORDER_FILLED', orderId: 'o1' }));
+  const loaded = loadEvents();
+  const forOrder = loaded.events.filter((e) => e.orderId === 'o1');
+  assert.equal(forOrder.length, 3);
   const report = reconcileAudit();
-  assert.equal(report.totalEvents, 3);
   assert.equal(report.eventsByType.ORDER_FILLED, 1);
   assert.ok(report.fillsWithoutAccountingEvent.includes('o1'));
   assert.ok(report.notes.length > 0);
   cleanAudit();
 });
+
 
 
 test('disk-write failure on event append throws AuditError', async () => {

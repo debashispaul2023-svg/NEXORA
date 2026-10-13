@@ -124,6 +124,14 @@ npm test           # Run foundation tests (node:test)
 - Strategy-level realized P&L is `null` (shared aggregate position; no allocation model). Portfolio-level realized P&L remains authoritative.
 - Intermittent `EIO` on append is an environmental filesystem limitation; mitigated by retry, not eliminated.
 
+### Phase 10 — Historical backtesting
+- `BacktestEngine` processes candles chronologically. At index i the strategy sees only `candles[0..i]`.
+- Fill model matches the existing engine: order timestamp = candle i timestamp; fill at the close of the first candle with timestamp >= order timestamp, adjusted by slippage. Never uses future highs or lows.
+- Each run uses fresh engine, ledger, and workflow state and a unique `runId`.
+- Metrics: starting capital, ending cash, ending position, ending equity (mark-to-market when a final mark exists, otherwise cash-only), realized P&L, unrealized when a mark exists, fees, completed SELL exits, win rate, max drawdown. `strategyRealizedPnl` is always null.
+- Run records are stored under `data/backtests/` and are never overwritten.
+- Synthetic test results do not imply profitability.
+
 ### Safety
 - Paper trading only. No real orders or credentials.
 - All paths resolved from verified project root and canonicalized with realpathSync (resists symlink escapes where creation is permitted).

@@ -19,9 +19,11 @@ temp/
 
 # Local runtime data (keep approved sample files in version control)
 data/**/*.jsonl
+data/backtests/
 data/runtime/
 data/cache/
 !data/**/.gitkeep
+
 
 # OS/editor files
 .DS_Store

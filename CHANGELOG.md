@@ -86,4 +86,11 @@
   - `AUDIT_FAILURE` event for post-commit audit degradation. Audit failures are returned on the result and do not roll back committed accounting.
   - Strategy-level realized P&L is explicitly `null` (shared aggregate position; no allocation model). Portfolio-level realized P&L remains authoritative.
   - Intermittent EIO on append characterized as sandbox filesystem limitation; mitigated by retry, not eliminated.
-- No Phase 10 work performed.
+- Phase 10: Deterministic historical backtesting engine.
+  - `src/backtest/input.mjs`: validated historical OHLCV series with stable identity; no fabricated candles.
+  - `src/backtest/engine.mjs`: chronological prefix evaluation; reuses existing strategy, execution, accounting, and risk; fresh state per run; unique runId.
+  - Fill model: signal on candle t close; order timestamp = t; fill at close of first candle with timestamp >= t, adjusted by slippage. Never uses future highs/lows.
+  - `src/backtest/metrics.mjs`: starting capital, ending cash/position/equity, realized P&L, unrealized when mark valid, fees, completed SELL exits, win rate, max drawdown. strategyRealizedPnl always null.
+  - `src/backtest/store.mjs`: persists run records under data/backtests/; never overwrites.
+  - Synthetic results do not imply profitability.
+- No Phase 11 work performed.

@@ -1,48 +1,41 @@
 # Current State — Update After Every Approved Phase
 
 ## Current status
-- Phase: 9.1 — Audit Reliability & Transaction Consistency Remediation (COMPLETE)
-- Implementation status: Process-local serialization, structured rejection stages, explicit unavailable strategy P&L
+- Phase: 10 — Deterministic Historical Backtesting Engine (COMPLETE)
+- Implementation status: Chronological prefix backtest reusing strategy, execution, accounting, and risk
 - Last verified repository root: /workspace/artifacts/NEXORA_FabInvests_Starter
-- Last verified commit: NOT AVAILABLE (no Git repository initialized)
-- Tests: PASSED (116/116 on final run)
+- Last verified commit: pending Phase 10 push
+- Tests: PASSED (127/127)
 - Deployment: NOT CONFIGURED
 
 ## Current objective
-Phase 9.1 complete. Awaiting next phase direction.
+Phase 10 implementation complete. Final verification and push pending.
 
 ## Approved decisions
 - Paper trading only
-- Phase 1–9: foundation through audit integration
-- Phase 9.1: remediation of concurrency characterization, event semantics, and attribution limits
+- Phase 1–9.1: foundation through audit remediation
+- Phase 10: deterministic historical backtesting
 
-## Files created in Phase 9.1
-- src/audit/lock.mjs
+## Files created in Phase 10
+- src/backtest/input.mjs
+- src/backtest/engine.mjs
+- src/backtest/metrics.mjs
+- src/backtest/store.mjs
+- tests/backtest.test.mjs
 
-## Files modified in Phase 9.1
-- src/audit/events.mjs (async append, new event types, lock)
-- src/audit/equity.mjs (async append, lock)
-- src/risk/workflow.mjs (async submitOrder, structured stages)
-- src/strategies/runner.mjs (async run)
-- src/analytics/performance.mjs (strategyRealizedPnl = null)
-- tests/audit.test.mjs, tests/integration-audit.test.mjs, tests/risk.test.mjs, tests/consistency.test.mjs, tests/strategy.test.mjs, tests/analytics.test.mjs
-- CHANGELOG.md, DECISIONS.md, CURRENT_STATE.md, README.md
+## Files modified in Phase 10
+- .gitignore (exclude data/backtests/)
+- CHANGELOG.md
+- DECISIONS.md (D-021)
+- CURRENT_STATE.md
+- README.md
 
-## Tests actually run
-- Baseline before Phase 9.1: intermittent (111–114 pass under EIO)
-- Final: `npm test` → 116 tests, 116 pass, 0 fail
-- Symlink escape test: skipped in this environment (EPERM); not claimed as fully verified
-- Command: `node src/index.mjs --check` → exit 0
-- Syntax: SYNTAX_OK
-- Git: no repository initialized
-
-## Known bugs and blockers
-- Symlink resistance not fully verified (EPERM).
-- Intermittent EIO on append is an environmental sandbox filesystem limitation; mitigated by retry, not eliminated.
-- Multi-process writers are unsupported. Process-local lock only.
-- Multi-file atomicity not claimed. Audit not tamper-proof.
-- Strategy-level realized P&L unavailable.
-- No live provider, no learning, no cloud, no Git.
+## Known limitations
+- End-of-bar fill model (signal and fill on candle t close). Not next-bar-open.
+- Strategy-level P&L unavailable.
+- Multi-process safety not claimed.
+- Synthetic results do not imply profitability.
+- No live data, no learning, no cloud.
 
 ## Next approved action
-Recommend Phase 10 once approved. Do not start automatically.
+Push Phase 10 after verification. Do not start Phase 11 automatically.

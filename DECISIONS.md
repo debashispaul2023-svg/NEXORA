@@ -82,6 +82,10 @@ Record material decisions here. Do not silently reverse a decision; propose a ch
 - Decision: Single-process serialization via withProcessLock for submitOrder and JSONL appends. Multi-process safety is not claimed. Rejection semantics are stage-specific. TRANSACTION_ROLLED_BACK is distinct from ORDER_REJECTED. Strategy-level realized P&L is unavailable and reported as null. Intermittent EIO is an environmental filesystem limitation, not a proven application race under serial tests.
 - Status: Implemented and tested.
 
+## D-021 — Phase 10 backtest fill and causality
+- Decision: Backtests evaluate the strategy only on the chronological prefix candles[0..i]. Order timestamp equals candle i timestamp. Fill uses the existing engine: first candle with timestamp >= order timestamp, fill at that candle's close with slippage. No future highs or lows are used. Each run is isolated with a unique runId. Completed trades are SELL fills that reduced a long position. Strategy-level P&L remains unavailable. Synthetic results do not imply profitability.
+- Status: Implemented and tested.
+
 ## Pending decisions
 - Exact market-data providers and their limits/terms (deferred).
 - Cloud backup policy (R2 / Supabase) — deferred.
