@@ -114,33 +114,50 @@ export async function appendEvent(event) {
   return withProcessLock(() => appendEventUnlocked(event));
 }
 
+let appendWriter = appendFileSync;
+
+/**
+ * Test-only writer override. Pass null to restore appendFileSync.
+ * @param {function|null} fn
+ */
+export function _setAppendWriterForTests(fn) {
+  appendWriter = fn || appendFileSync;
+}
+
 function appendEventUnlocked(event) {
   const normalized = validateEvent(event);
-  const existing = loadEvents();
-  if (existing.events.some((e) => e.eventId === normalized.eventId)) {
+  const path = eventsPath();
+  ensureDir(path);
+
+  if (eventIdPresent(normalized.eventId)) {
     return { appended: false, event: normalized, duplicate: true };
   }
 
-  const path = eventsPath();
-  ensureDir(path);
   const line = JSON.stringify(normalized) + '\n';
-  let written = false;
   let lastErr;
-  for (let attempt = 0; attempt < 8 && !written; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     try {
-      appendFileSync(path, line, 'utf8');
-      written = true;
+      appendWriter(path, line, 'utf8');
+      return { appended: true, event: normalized, duplicate: false };
     } catch (err) {
       lastErr = err;
+      // A failed append may still have written the line (e.g. EIO on close).
+      // Recheck before retrying so we do not append a second copy.
+      if (eventIdPresent(normalized.eventId)) {
+        return { appended: true, event: normalized, duplicate: false, landedDespiteError: true };
+      }
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30);
     }
   }
 
-  if (!written) {
-    throw new AuditError(`Failed to append event: ${lastErr.message}`, { code: lastErr.code });
-  }
-  return { appended: true, event: normalized, duplicate: false };
+  throw new AuditError(`Failed to append event: ${lastErr.message}`, { code: lastErr.code });
 }
+
+function eventIdPresent(eventId) {
+  const loaded = loadEvents();
+  return loaded.events.some((e) => e.eventId === eventId);
+}
+
 
 
 
@@ -153,7 +170,7 @@ function appendEventUnlocked(event) {
 export function loadEvents() {
   const path = eventsPath();
   if (!existsSync(path)) {
-    return { events: [], malformed: 0, unsupported: 0, fileSize: 0 };
+    return { events: [], malformed: 0, unsupported: 0, fileSize: 0, duplicateEventIds: 0 };
   }
 
   const raw = readFileSync(path, 'utf8');
@@ -163,8 +180,10 @@ export function loadEvents() {
   if (lines.length && lines[lines.length - 1] === '') lines.pop();
 
   const events = [];
+  const seen = new Set();
   let malformed = 0;
   let unsupported = 0;
+  let duplicateEventIds = 0;
 
   for (const line of lines) {
     if (!line.trim()) {
@@ -183,14 +202,21 @@ export function loadEvents() {
       continue;
     }
     try {
-      events.push(validateEvent(obj));
+      const ev = validateEvent(obj);
+      if (seen.has(ev.eventId)) {
+        duplicateEventIds += 1;
+        continue;
+      }
+      seen.add(ev.eventId);
+      events.push(ev);
     } catch {
       malformed += 1;
     }
   }
 
-  return { events, malformed, unsupported, fileSize };
+  return { events, malformed, unsupported, fileSize, duplicateEventIds };
 }
+
 
 /**
  * Observability helpers.

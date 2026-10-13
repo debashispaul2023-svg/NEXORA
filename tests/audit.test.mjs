@@ -9,7 +9,9 @@ import {
   validateEvent,
   EVENT_TYPES,
   EVENTS_FILENAME,
+  _setAppendWriterForTests,
 } from '../src/audit/events.mjs';
+
 import {
   buildEquitySnapshot,
   appendEquitySnapshot,
@@ -189,6 +191,48 @@ test('disk-write failure on event append throws AuditError', async () => {
     AuditError,
   );
 });
+
+test('retry after write-then-throw does not duplicate the event', async () => {
+  cleanAudit();
+  let calls = 0;
+  _setAppendWriterForTests((path, line, enc) => {
+    calls += 1;
+    appendFileSync(path, line, enc);
+    if (calls === 1) {
+      const err = new Error('simulated EIO after write');
+      err.code = 'EIO';
+      throw err;
+    }
+  });
+  try {
+    const r = await appendEvent(sampleEvent({ eventId: 'retry-1' }));
+    assert.equal(r.appended, true);
+    assert.equal(r.landedDespiteError, true);
+    const loaded = loadEvents();
+    assert.equal(loaded.events.filter((e) => e.eventId === 'retry-1').length, 1);
+    assert.equal(loaded.duplicateEventIds, 0);
+  } finally {
+    _setAppendWriterForTests(null);
+  }
+  cleanAudit();
+});
+
+test('duplicate lines are detected and do not inflate logical event count', async () => {
+  cleanAudit();
+  await appendEvent(sampleEvent({ eventId: 'dup-line', eventType: 'ORDER_FILLED', orderId: 'od' }));
+  const path = resolveProjectPath(`data/audit/${EVENTS_FILENAME}`);
+  const line = JSON.stringify(sampleEvent({ eventId: 'dup-line', eventType: 'ORDER_FILLED', orderId: 'od' })) + '\n';
+  retryFs(() => appendFileSync(path, line));
+  const loaded = loadEvents();
+  assert.equal(loaded.events.filter((e) => e.eventId === 'dup-line').length, 1);
+  assert.ok(loaded.duplicateEventIds >= 1);
+  const report = reconcileAudit();
+  assert.ok(report.duplicateEventIds >= 1);
+  assert.ok((report.eventsByType.ORDER_FILLED || 0) >= 1);
+  cleanAudit();
+});
+
+
 
 
 test('no future-data leakage in equity snapshot construction', () => {

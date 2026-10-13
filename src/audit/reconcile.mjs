@@ -68,7 +68,7 @@ export function reconcileAudit({ portfolioSnapshot = null } = {}) {
     eventsByType: byType,
     malformedEvents: eventsLoaded.malformed,
     unsupportedEventSchemas: eventsLoaded.unsupported,
-    duplicateEventIds: duplicateIds,
+    duplicateEventIds: eventsLoaded.duplicateEventIds || 0,
     ordersWithoutTerminalEvent: ordersWithoutTerminal,
     fillsWithoutAccountingEvent: fillsWithoutAccounting,
     equitySnapshotCount: equity.length,

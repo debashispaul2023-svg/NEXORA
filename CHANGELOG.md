@@ -93,4 +93,12 @@
   - `src/backtest/metrics.mjs`: starting capital, ending cash/position/equity, realized P&L, unrealized when mark valid, fees, completed SELL exits, win rate, max drawdown. strategyRealizedPnl always null.
   - `src/backtest/store.mjs`: persists run records under data/backtests/; never overwrites.
   - Synthetic results do not imply profitability.
-- No Phase 11 work performed.
+- Security hardening (post-Phase 10):
+  - Backtest `runId` restricted to a safe identifier pattern.
+  - Snapshot and backtest record files written with owner-only permissions where supported.
+  - SECURITY.md documents architecture, controls, and non-applicable HTTP/database checks.
+- Phase 11: Backtesting validation and robustness.
+  - Added regression tests for prefix causality, end-of-bar fill timing, metric edge cases, input rejection, and run isolation.
+  - No change to fill model or strategy rules. Synthetic results do not imply profitability.
+- Audit reliability: append retry rechecks whether the eventId already landed before writing again. loadEvents collapses duplicate eventIds and reports the count. Reconciliation uses the logical (deduped) event list.
+- No Phase 12 work performed.

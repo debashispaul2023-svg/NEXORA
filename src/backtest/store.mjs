@@ -1,4 +1,5 @@
-import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync, chmodSync } from 'node:fs';
+
 import { join, dirname } from 'node:path';
 import { resolveProjectPath } from '../paths.mjs';
 import { AuditError } from '../errors.mjs';
@@ -13,9 +14,17 @@ import { AuditError } from '../errors.mjs';
 
 export const BACKTEST_SCHEMA_VERSION = 1;
 
+function assertSafeRunId(runId) {
+  if (typeof runId !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(runId)) {
+    throw new AuditError('runId must be 1-80 chars of letters, digits, underscore, or hyphen');
+  }
+}
+
 function runPath(runId) {
+  assertSafeRunId(runId);
   return resolveProjectPath(join('data', 'backtests', `${runId}.json`));
 }
+
 
 /**
  * Persist a backtest run record. Rejects if the file already exists.
@@ -38,9 +47,11 @@ export function saveBacktestRun(result) {
     ...result,
     recordedAt: new Date().toISOString(),
   };
-  writeFileSync(path, JSON.stringify(record, null, 2), 'utf8');
+  writeFileSync(path, JSON.stringify(record, null, 2), { encoding: 'utf8', mode: 0o600 });
+  try { chmodSync(path, 0o600); } catch { /* best-effort */ }
   return { saved: true, path };
 }
+
 
 /**
  * Load a previously saved run record.

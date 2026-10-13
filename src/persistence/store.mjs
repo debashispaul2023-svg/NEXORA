@@ -1,5 +1,6 @@
-import { writeFileSync, renameSync, unlinkSync, existsSync, readFileSync, openSync, fsyncSync, closeSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync, renameSync, unlinkSync, existsSync, readFileSync, openSync, fsyncSync, closeSync, chmodSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+
 import { resolveProjectPath } from '../paths.mjs';
 import { PersistenceError, AccountingError } from '../errors.mjs';
 import { AccountingLedger } from '../accounting/ledger.mjs';
@@ -79,6 +80,10 @@ export function saveSnapshot(engine, ledger, extra = {}) {
   // Pre-validate
   validateSnapshot(snapshot);
 
+  const dir = dirname(dataPath(SNAPSHOT_FILENAME));
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
+
+
   const tmp = dataPath(SNAPSHOT_TMP);
   const current = dataPath(SNAPSHOT_FILENAME);
   const bak = dataPath(SNAPSHOT_BAK);
@@ -122,6 +127,12 @@ export function saveSnapshot(engine, ledger, extra = {}) {
   }
 
 
+  // Restrict permissions on the promoted snapshot (owner read/write only)
+  try { chmodSync(current, 0o600); } catch { /* best-effort */ }
+  if (existsSync(bak)) {
+    try { chmodSync(bak, 0o600); } catch { /* best-effort */ }
+  }
+
   // Best-effort cleanup of stray tmp
   if (existsSync(tmp)) {
     try { unlinkSync(tmp); } catch { /* ignore */ }
@@ -129,6 +140,8 @@ export function saveSnapshot(engine, ledger, extra = {}) {
 
   return current;
 }
+
+
 
 /**
  * Load latest valid snapshot into new engine + ledger instances.

@@ -119,6 +119,130 @@ test('metrics do not invent strategy-level P&L', () => {
   assert.ok(Math.abs(m.unrealizedPnl - 10) < 1e-9);
 });
 
+test('unsafe runId is rejected', () => {
+  assert.throws(() => saveBacktestRun({ runId: '../escape' }), /runId/);
+  assert.throws(() => saveBacktestRun({ runId: 'a/b' }), /runId/);
+  assert.throws(() => loadBacktestRun('../escape'), /runId/);
+});
+
 test('invalid candles are rejected by historical input', () => {
   assert.throws(() => validateHistoricalSeries([{ timestamp: 'bad' }]), MarketDataError);
 });
+
+test('out-of-order and non-finite candles are rejected', () => {
+  const base = { open: 10, high: 11, low: 9, close: 10, volume: 1 };
+  assert.throws(
+    () => validateHistoricalSeries([
+      { ...base, timestamp: 2000 },
+      { ...base, timestamp: 1000 },
+    ]),
+    MarketDataError,
+  );
+  assert.throws(
+    () => validateHistoricalSeries([{ ...base, timestamp: 1000, close: NaN }]),
+    MarketDataError,
+  );
+  assert.throws(
+    () => validateHistoricalSeries([{ ...base, timestamp: 1000, high: 8 }]),
+    MarketDataError,
+  );
+});
+
+test('evaluate receives only the chronological prefix', async () => {
+  const seen = [];
+  const evaluate = (series) => {
+    seen.push(series.length);
+    const last = series[series.length - 1];
+    return {
+      strategyId: 'probe',
+      strategyVersion: '1',
+      timestamp: last.timestamp,
+      signal: 'HOLD',
+      reason: 'probe',
+      actionable: false,
+      indicators: { close: last.close },
+    };
+  };
+  const engine = new BacktestEngine({ evaluate, initialCapital: 1000, audit: false });
+  const short = candles.slice(0, 5);
+  await engine.run(short);
+  assert.deepEqual(seen, [1, 2, 3, 4, 5]);
+});
+
+test('end-of-bar fill uses signal candle close and not a future high', async () => {
+  const series = [
+    { timestamp: 1000, open: 100, high: 101, low: 99, close: 100, volume: 1 },
+    { timestamp: 2000, open: 100, high: 150, low: 99, close: 110, volume: 1 },
+  ];
+  const evaluate = (s) => {
+    const last = s[s.length - 1];
+    if (last.timestamp !== 2000) {
+      return { strategyId: 'probe', strategyVersion: '1', timestamp: last.timestamp, signal: 'HOLD', reason: 'wait', actionable: false, indicators: {} };
+    }
+    return { strategyId: 'probe', strategyVersion: '1', timestamp: last.timestamp, signal: 'BUY', reason: 'buy', actionable: true, quantity: 1, indicators: { close: last.close } };
+  };
+  const engine = new BacktestEngine({ evaluate, initialCapital: 1000, slippageBps: 0, audit: false });
+  const result = await engine.run(series);
+  assert.equal(result.metrics.endingPositionQty, 1);
+  // Fill at close 110, not high 150
+  assert.ok(Math.abs(result.metrics.endingCash - 890) < 1e-6);
+  const buy = result.signals.find((s) => s.signal === 'BUY');
+  assert.equal(buy.timestamp, 2000);
+});
+
+test('win rate is null when no completed trades', () => {
+  const m = buildBacktestMetrics({
+    initialCapital: 1000,
+    ledgerSnapshot: { cash: 1000, positionQty: 0, avgEntry: 0, realizedPnl: 0 },
+    ledgerEntries: [],
+    finalMark: 100,
+  });
+  assert.equal(m.completedTrades, 0);
+  assert.equal(m.winRate, null);
+});
+
+test('missing final mark yields cash-only equity', () => {
+  const m = buildBacktestMetrics({
+    initialCapital: 1000,
+    ledgerSnapshot: { cash: 900, positionQty: 1, avgEntry: 100, realizedPnl: 0 },
+    ledgerEntries: [],
+    finalMark: null,
+  });
+  assert.equal(m.equityMode, 'cash_only');
+  assert.equal(m.endingEquity, 900);
+  assert.equal(m.unrealizedPnl, null);
+});
+
+test('drawdown is null for a single equity point', () => {
+  const m = buildBacktestMetrics({
+    initialCapital: 1000,
+    ledgerSnapshot: { cash: 1000, positionQty: 0, avgEntry: 0, realizedPnl: 0 },
+    equitySeries: [{ timestamp: 1, equity: 1000 }],
+  });
+  assert.equal(m.maxDrawdown, null);
+});
+
+test('independent runs do not share capital', async () => {
+  const a = new BacktestEngine({ initialCapital: 1000, audit: false });
+  const b = new BacktestEngine({ initialCapital: 500, audit: false });
+  const ra = await a.run(candles);
+  const rb = await b.run(candles);
+  assert.equal(ra.metrics.startingCapital, 1000);
+  assert.equal(rb.metrics.startingCapital, 500);
+  assert.notEqual(ra.runId, rb.runId);
+});
+
+test('saved run has schema version and does not alter paper state', async () => {
+  const engine = new BacktestEngine({ initialCapital: 1000, audit: false });
+  const result = await engine.run(candles.slice(0, 8));
+  saveBacktestRun(result);
+  const loaded = loadBacktestRun(result.runId);
+  assert.equal(loaded.schemaVersion, 1);
+  assert.equal(loaded.seriesIdentity, result.seriesIdentity);
+  const paper = resolveProjectPath('data/trades/paper-state.json');
+  assert.equal(existsSync(paper), false);
+  cleanRun(result.runId);
+});
+
+
+
