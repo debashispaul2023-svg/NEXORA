@@ -1,0 +1,89 @@
+# Changelog
+
+## Unreleased
+- Added project identity and repository safety rules.
+- Added planned architecture and path map.
+- Added persistent current-state, decision, and task-protocol files.
+- Phase 1: Project foundation and configuration.
+  - Centralized config loader + validator (paper-trading enforced).
+  - Safe project-root detection and path resolution utilities.
+  - Structured JSON logger with secret redaction.
+  - Shared error classes.
+  - Idempotent data-directory initialization.
+  - Minimal entry point (`src/index.mjs`) with health check.
+  - Foundation tests (config, paths, init, logger).
+  - Zero external dependencies.
+  - Setup documentation added to README.md.
+  - .env.example provided (no real secrets).
+- Phase 1.1: Path and configuration hardening.
+  - `src/paths.mjs`: realpathSync canonicalization added; non-existent targets handled by canonicalizing the existing parent then appending the remainder; symlink-escape rejection.
+  - Tests expanded for non-existent paths, environment overrides, and paper-mode enforcement under env attack.
+  - loopSeconds source of truth documented (config.example.json = 30).
+  - Zero external dependencies; paper-trading controls unchanged.
+- Phase 2: Market-data foundation (synthetic only).
+  - `src/market-data/candle.mjs`: OHLCV validation, timestamp normalization (UTC ms), series ordering/duplicate checks, OHLC consistency.
+  - `src/market-data/fixtures.mjs`: deterministic synthetic series generator (explicitly labeled source: synthetic).
+  - `src/market-data/indicators.mjs`: SMA, EMA, RSI with warm-up (null), no future-data leakage.
+  - `MarketDataError` added to shared errors.
+  - Tests: market-data validation + indicator determinism and temporal leakage.
+  - No live provider, no network calls, no external dependencies.
+- Phase 3: Paper execution and accounting foundation.
+  - `src/execution/order.mjs`: MARKET order validation, states (pending → filled|rejected), idempotent ids.
+  - `src/execution/engine.mjs`: deterministic fills at first candle timestamp >= order timestamp; fill = close ± slippage; no future candles.
+  - `src/accounting/ledger.mjs`: integer-cent cash, long-only positions, average entry, realized/unrealized P&L, fees, equity, invariants.
+  - Tests cover buys/sells, rejections, insufficient cash/position, fees/slippage, equity reconciliation, idempotency, temporal causality.
+  - In-memory only; no durable persistence or restart recovery.
+  - No short selling, leverage, margin, liquidation, live provider, or real trading.
+- Phase 4: Durable local persistence and recovery.
+  - `src/persistence/store.mjs`: versioned JSON snapshots, atomic write (tmp + fsync + rename), .bak rotation, recovery with invariant checks.
+  - Ledger and engine gained exportState/importState.
+  - Authoritative: cashCents, position, avgEntry, realizedPnl, ledger, processedFills, orders. Derived: equity/unrealized (not stored).
+  - Generic trainingCheckpoint slot reserved (no Training Engine exists).
+  - Tests cover round-trip, idempotency after recovery, corrupt/missing/unsupported version, incomplete tmp, unsafe paths, determinism.
+  - No cloud, no external deps, no real trading.
+- Phase 5: Risk Management Engine.
+  - `src/risk/engine.mjs`: configurable limits (max position qty/notional, max order notional, daily realized-loss), UTC trading-day boundary, fail-closed evaluation.
+  - `src/risk/workflow.mjs`: public submitOrder path enforces validate → risk → execute → account → persist. Rejections do not mutate ledger.
+  - Daily loss state persisted in snapshot so restarts do not reset the day's limit.
+  - Distinction documented: daily realized-loss ≠ maximum drawdown.
+  - Tests cover approvals, rejections, immutability, idempotency, recovery, invalid config.
+  - No short selling, leverage, live trading, or external dependencies.
+- Phase 5.1: Transaction consistency hardening.
+  - `PaperTradingWorkflow` now stages changes and rolls back in-memory ledger, daily tracker, and engine state if persistence fails.
+  - Result includes explicit `durable` flag and `outcome` (`committed`, `rolled_back`, `memory_only`, etc.).
+  - Ambiguous write failures are resolved by inspecting the on-disk snapshot when possible.
+  - Retry after rollback is safe; same order id cannot produce duplicate fills.
+  - Tests cover failure injection, rollback, retry, and risk rejection immutability.
+  - Limitation: perfect cross-process atomicity is not claimed; same-process consistency with last successful snapshot is the guarantee.
+- Phase 6: Strategy Signal Interface.
+  - `src/strategies/interface.mjs`: signal contract and evaluation record.
+  - `src/strategies/baseline.mjs`: deterministic SMA/EMA/RSI rules (HOLD on insufficient history).
+  - `src/strategies/runner.mjs`: submits actionable signals only through PaperTradingWorkflow; order id = strategyId-timestamp for idempotency.
+  - Evaluation records capture strategy, signal, indicators, risk decision, and outcome. Not a learning system.
+  - Tests cover HOLD, determinism, duplicates, risk rejection, long-only, causality, invalid data.
+  - No evolutionary learning, no live provider, no real trading.
+- Phase 7: Persistent strategy records and performance analytics.
+  - `src/analytics/records.mjs`: versioned evaluation store under data/episodes/; dedup key strategyId:candleTimestamp; atomic write + .bak.
+  - `src/analytics/performance.mjs`: signal counts, completed trades, win rate, fees, equity, max drawdown; open positions excluded from win/loss.
+  - `src/analytics/prediction.mjs`: optional directional scoring with fixed horizon; unresolved vs scored; no future leakage in prediction generation.
+  - Runner optional `persistRecords` flag.
+  - Evidence collection only — no learning or strategy evolution.
+- Phase 8: Persistent event and equity audit trail.
+  - `src/audit/events.mjs`: append-oriented JSONL events (schema v1) under data/audit/events.jsonl.
+  - `src/audit/equity.mjs`: chronological equity snapshots under data/audit/equity.jsonl (cash-only vs mark-to-market labeled).
+  - `src/audit/reconcile.mjs`: read-only reconciliation diagnostics (no auto-repair).
+  - Duplicate eventId / snapshotId rejected. Malformed lines skipped and counted. History never truncated.
+  - Not tamper-proof. Single-writer. Multi-file atomicity not claimed.
+- Phase 9: Audit integration with paper-trading workflow.
+  - `PaperTradingWorkflow` emits ORDER_SUBMITTED, ORDER_APPROVED/REJECTED, ORDER_FILLED, ACCOUNTING_APPLIED, EQUITY_SNAPSHOT_RECORDED automatically.
+  - Correlation ID = order id. Audit write failure after accounting reports auditDegraded; does not roll back a committed trade.
+  - Equity snapshot after successful accounting (mark-to-market if markPrice provided, else cash-only).
+  - StrategyRunner emits SIGNAL_RECORDED. HOLD produces no order event.
+  - Tests run serially (`--test-concurrency=1`) to respect single-writer audit files.
+- Phase 9.1: Audit reliability remediation.
+  - Process-local `withProcessLock` serializes submitOrder and JSONL appends within one process. Not multi-process safe.
+  - Rejection stages are explicit (`risk`, `execution`, `accounting`). Rollback uses `TRANSACTION_ROLLED_BACK`, not `ORDER_REJECTED`.
+  - `AUDIT_FAILURE` event for post-commit audit degradation. Audit failures are returned on the result and do not roll back committed accounting.
+  - Strategy-level realized P&L is explicitly `null` (shared aggregate position; no allocation model). Portfolio-level realized P&L remains authoritative.
+  - Intermittent EIO on append characterized as sandbox filesystem limitation; mitigated by retry, not eliminated.
+- No Phase 10 work performed.

@@ -1,0 +1,18 @@
+{
+  "name": "fabinvests",
+  "version": "0.1.0",
+  "description": "FabInvests — paper-trading simulator and strategy research platform (NEXORA)",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "init-data": "node src/init.mjs",
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "check": "node src/index.mjs --check"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

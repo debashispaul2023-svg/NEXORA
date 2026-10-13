@@ -1,0 +1,22 @@
+{
+  "project": {
+    "name": "FabInvests",
+    "agentName": "NEXORA",
+    "mode": "paper"
+  },
+  "runtime": {
+    "loopSeconds": 30,
+    "dashboardPort": 3002,
+    "timezone": "UTC"
+  },
+  "safety": {
+    "paperTradingOnly": true,
+    "allowRealOrders": false,
+    "requireVerifiedMarketData": true,
+    "blockTradingOnStaleData": true
+  },
+  "capital": {
+    "initialVirtualCapital": 1000,
+    "currency": "USD"
+  }
+}
