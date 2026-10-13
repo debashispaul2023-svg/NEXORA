@@ -105,4 +105,9 @@
   - Measured backtest runtime (synthetic series): 50 candles ~18 ms, 200 ~70 ms, 500 ~316 ms. Superlinear prefix re-evaluation. No rewrite performed.
   - Equity JSONL append now rechecks snapshotId after a failed write, matching the events mitigation. Exactly-once writes are not claimed.
   - Symlink escape test remains NOT VERIFIED (EPERM).
-- No Phase 13 work performed.
+- Phase 13: Walk-forward evaluation.
+  - Fixed-parameter chronological windows with independent starting capital.
+  - Each window receives only its own slice. No parameter fitting. No future candles.
+  - Aggregate report includes profitable and unprofitable windows. Positive P&L is not robustness.
+  - Synthetic results do not imply profitability or future performance.
+- No Phase 14 work performed.
