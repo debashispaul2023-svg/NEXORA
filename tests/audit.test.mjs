@@ -17,7 +17,9 @@ import {
   appendEquitySnapshot,
   loadEquitySnapshots,
   EQUITY_FILENAME,
+  _setEquityWriterForTests,
 } from '../src/audit/equity.mjs';
+
 import { reconcileAudit } from '../src/audit/reconcile.mjs';
 import { AuditError } from '../src/errors.mjs';
 import { AccountingLedger } from '../src/accounting/ledger.mjs';
@@ -235,6 +237,35 @@ test('duplicate lines are detected and do not inflate logical event count', asyn
 
 
 
+test('equity retry after write-then-throw does not duplicate the snapshot', async () => {
+  cleanAudit();
+  const snap = buildEquitySnapshot(
+    { cash: 1000, positionQty: 0, avgEntry: 0, realizedPnl: 0, initialCapital: 1000 },
+    { snapshotId: 'eq-retry', timestamp: 1 },
+  );
+  let calls = 0;
+  _setEquityWriterForTests((path, line, enc) => {
+    calls += 1;
+    appendFileSync(path, line, enc);
+    if (calls === 1) {
+      const err = new Error('simulated EIO after write');
+      err.code = 'EIO';
+      throw err;
+    }
+  });
+  try {
+    const r = await appendEquitySnapshot(snap);
+    assert.equal(r.appended, true);
+    assert.equal(r.landedDespiteError, true);
+    const loaded = loadEquitySnapshots();
+    assert.equal(loaded.snapshots.filter((s) => s.snapshotId === 'eq-retry').length, 1);
+    assert.equal(loaded.duplicateSnapshotIds, 0);
+  } finally {
+    _setEquityWriterForTests(null);
+  }
+  cleanAudit();
+});
+
 test('no future-data leakage in equity snapshot construction', () => {
   const snap = { cash: 1000, positionQty: 1, avgEntry: 100, realizedPnl: 0, initialCapital: 1000 };
   // Snapshot uses only the provided markPrice; it does not look at later candles
@@ -242,3 +273,4 @@ test('no future-data leakage in equity snapshot construction', () => {
   assert.equal(s.markPrice, 105);
   assert.equal(s.equity, 1105);
 });
+

@@ -101,4 +101,8 @@
   - Added regression tests for prefix causality, end-of-bar fill timing, metric edge cases, input rejection, and run isolation.
   - No change to fill model or strategy rules. Synthetic results do not imply profitability.
 - Audit reliability: append retry rechecks whether the eventId already landed before writing again. loadEvents collapses duplicate eventIds and reports the count. Reconciliation uses the logical (deduped) event list.
-- No Phase 12 work performed.
+- Phase 12: Performance, reliability, and security audit.
+  - Measured backtest runtime (synthetic series): 50 candles ~18 ms, 200 ~70 ms, 500 ~316 ms. Superlinear prefix re-evaluation. No rewrite performed.
+  - Equity JSONL append now rechecks snapshotId after a failed write, matching the events mitigation. Exactly-once writes are not claimed.
+  - Symlink escape test remains NOT VERIFIED (EPERM).
+- No Phase 13 work performed.

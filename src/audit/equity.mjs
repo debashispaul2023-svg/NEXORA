@@ -122,40 +122,53 @@ export function validateEquitySnapshot(snap) {
  * Serialized within this process. Does not mutate the portfolio.
  */
 export async function appendEquitySnapshot(snap) {
-  return withProcessLock(() => {
-    const normalized = validateEquitySnapshot(snap);
-    const existing = loadEquitySnapshots();
-    if (existing.snapshots.some((s) => s.snapshotId === normalized.snapshotId)) {
-      return { appended: false, snapshot: normalized, duplicate: true };
-    }
-
-    const path = equityPath();
-    ensureDir(path);
-    const line = JSON.stringify(normalized) + '\n';
-    let written = false;
-    let lastErr;
-    for (let attempt = 0; attempt < 8 && !written; attempt++) {
-      try {
-        appendFileSync(path, line, 'utf8');
-        written = true;
-      } catch (err) {
-        lastErr = err;
-        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30);
-      }
-    }
-    if (!written) {
-      throw new AuditError(`Failed to append equity snapshot: ${lastErr.message}`, { code: lastErr.code });
-    }
-    return { appended: true, snapshot: normalized, duplicate: false };
-  });
+  return withProcessLock(() => appendEquityUnlocked(snap));
 }
+
+let equityWriter = appendFileSync;
+
+/** Test-only writer override. Pass null to restore appendFileSync. */
+export function _setEquityWriterForTests(fn) {
+  equityWriter = fn || appendFileSync;
+}
+
+function appendEquityUnlocked(snap) {
+  const normalized = validateEquitySnapshot(snap);
+  const path = equityPath();
+  ensureDir(path);
+
+  if (snapshotIdPresent(normalized.snapshotId)) {
+    return { appended: false, snapshot: normalized, duplicate: true };
+  }
+
+  const line = JSON.stringify(normalized) + '\n';
+  let lastErr;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      equityWriter(path, line, 'utf8');
+      return { appended: true, snapshot: normalized, duplicate: false };
+    } catch (err) {
+      lastErr = err;
+      if (snapshotIdPresent(normalized.snapshotId)) {
+        return { appended: true, snapshot: normalized, duplicate: false, landedDespiteError: true };
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30);
+    }
+  }
+  throw new AuditError(`Failed to append equity snapshot: ${lastErr.message}`, { code: lastErr.code });
+}
+
+function snapshotIdPresent(snapshotId) {
+  return loadEquitySnapshots().snapshots.some((s) => s.snapshotId === snapshotId);
+}
+
 
 
 
 export function loadEquitySnapshots() {
   const path = equityPath();
   if (!existsSync(path)) {
-    return { snapshots: [], malformed: 0, unsupported: 0, fileSize: 0 };
+    return { snapshots: [], malformed: 0, unsupported: 0, fileSize: 0, duplicateSnapshotIds: 0 };
   }
   const raw = readFileSync(path, 'utf8');
   const fileSize = statSync(path).size;
@@ -163,8 +176,10 @@ export function loadEquitySnapshots() {
   if (lines.length && lines[lines.length - 1] === '') lines.pop();
 
   const snapshots = [];
+  const seen = new Set();
   let malformed = 0;
   let unsupported = 0;
+  let duplicateSnapshotIds = 0;
 
   for (const line of lines) {
     if (!line.trim()) {
@@ -183,11 +198,18 @@ export function loadEquitySnapshots() {
       continue;
     }
     try {
-      snapshots.push(validateEquitySnapshot(obj));
+      const snap = validateEquitySnapshot(obj);
+      if (seen.has(snap.snapshotId)) {
+        duplicateSnapshotIds += 1;
+        continue;
+      }
+      seen.add(snap.snapshotId);
+      snapshots.push(snap);
     } catch {
       malformed += 1;
     }
   }
 
-  return { snapshots, malformed, unsupported, fileSize };
+  return { snapshots, malformed, unsupported, fileSize, duplicateSnapshotIds };
 }
+

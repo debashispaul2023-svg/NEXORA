@@ -24,5 +24,6 @@ The process owner is trusted. Inputs are local configuration, local candle fixtu
 ## Remaining limitations
 - Process-local locking does not protect against other processes writing the same files.
 - Audit JSONL is append-oriented and not tamper-proof.
+- Equity snapshot append uses the same landed-despite-error recheck as events. Exactly-once writes are not claimed.
 - Symlink escape test may skip in environments that return EPERM.
 - Logger redacts sensitive key names, not arbitrary secret-looking values in free text.
