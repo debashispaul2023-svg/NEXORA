@@ -46,17 +46,22 @@ export function buildBacktestMetrics({
   let completedTrades = 0;
   let winningTrades = 0;
   let losingTrades = 0;
+  let breakEvenTrades = 0;
   let prevRealized = 0;
   for (const e of ledgerEntries) {
     totalFeesCents += e.feeCents || 0;
     if (e.side === 'SELL') {
+      // A completed trade here is a SELL fill that reduced a long position.
+      // It is not a matched round-trip. Break-even SELLs are counted separately.
       completedTrades += 1;
       const delta = (e.realizedPnlCents || 0) - prevRealized;
       if (delta > 0) winningTrades += 1;
       else if (delta < 0) losingTrades += 1;
+      else breakEvenTrades += 1;
     }
     prevRealized = e.realizedPnlCents || 0;
   }
+
 
   const maxDd = computeMaxDrawdown(equitySeries);
 
@@ -72,7 +77,9 @@ export function buildBacktestMetrics({
     completedTrades,
     winningTrades,
     losingTrades,
+    breakEvenTrades,
     winRate: completedTrades === 0 ? null : winningTrades / completedTrades,
+    sampleStatus: completedTrades === 0 ? 'no_completed_trades' : (completedTrades < 5 ? 'insufficient' : 'measured'),
     maxDrawdown: maxDd,
     strategyRealizedPnl: null,
     signalCount: signals.length,

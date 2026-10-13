@@ -164,23 +164,33 @@ export function summarizeWalkForward({
   synthetic = false,
 }) {
   const ok = windows.filter((w) => w.status === 'ok');
-  const pnl = ok.map((w) => (w.endingEquity != null ? w.endingEquity - w.startingCapital : null));
+  const windowDeltas = ok.map((w) => (
+    w.endingEquity != null && w.startingCapital != null
+      ? w.endingEquity - w.startingCapital
+      : null
+  ));
   const profitable = ok.filter((w) => w.endingEquity != null && w.endingEquity > w.startingCapital);
   const unprofitable = ok.filter((w) => w.endingEquity != null && w.endingEquity < w.startingCapital);
-  const totalTrades = ok.reduce((s, w) => s + (w.completedTrades || 0), 0);
-  const totalFees = ok.reduce((s, w) => s + (w.totalFees || 0), 0);
+  const flat = ok.filter((w) => w.endingEquity != null && w.endingEquity === w.startingCapital);
+  const totalTrades = ok.reduce((s, w) => s + (Number.isFinite(w.completedTrades) ? w.completedTrades : 0), 0);
+  const totalFees = ok.reduce((s, w) => s + (Number.isFinite(w.totalFees) ? w.totalFees : 0), 0);
   const totalEvalCandles = ok.reduce((s, w) => s + (w.evalBars || 0), 0);
 
   let best = null;
   let worst = null;
-  for (const w of ok) {
-    if (w.endingEquity == null) continue;
-    const delta = w.endingEquity - w.startingCapital;
+  for (let i = 0; i < ok.length; i++) {
+    const w = ok[i];
+    const delta = windowDeltas[i];
+    if (delta == null) continue;
     if (!best || delta > best.delta) best = { index: w.index, delta, endingEquity: w.endingEquity };
     if (!worst || delta < worst.delta) worst = { index: w.index, delta, endingEquity: w.endingEquity };
   }
 
-  const sampleTooSmall = ok.length < 3 || totalTrades < 5;
+  const sampleThresholds = { minWindows: 3, minTrades: 5 };
+  const sampleTooSmall = ok.length < sampleThresholds.minWindows || totalTrades < sampleThresholds.minTrades;
+  const sampleStatus = ok.length === 0
+    ? 'no_successful_windows'
+    : (sampleTooSmall ? 'insufficient' : 'adequate_for_description_only');
 
   return {
     seriesIdentity,
@@ -201,10 +211,17 @@ export function summarizeWalkForward({
     totalFees,
     profitableWindows: profitable.length,
     unprofitableWindows: unprofitable.length,
+    flatWindows: flat.length,
+    windowDeltas,
+    aggregatePnl: null,
+    aggregatePnlStatus: 'unavailable_independent_windows',
     bestWindow: best,
     worstWindow: worst,
+    sampleThresholds,
     sampleTooSmall,
+    sampleStatus,
     windows,
-    note: 'Independent windows with fixed parameters. Positive aggregate P&L does not imply robustness or future performance. Synthetic results do not imply profitability. strategyRealizedPnl is unavailable.',
+    note: 'Independent windows with fixed parameters. Window P&L is not summed into a portfolio return. aggregatePnl is unavailable. A positive result does not imply robustness or future performance. Synthetic results do not imply profitability. strategyRealizedPnl is unavailable.',
   };
 }
+

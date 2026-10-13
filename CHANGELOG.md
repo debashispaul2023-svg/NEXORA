@@ -110,4 +110,10 @@
   - Each window receives only its own slice. No parameter fitting. No future candles.
   - Aggregate report includes profitable and unprofitable windows. Positive P&L is not robustness.
   - Synthetic results do not imply profitability or future performance.
-- No Phase 14 work performed.
+- Phase 14: Backtest result quality.
+  - Completed trade remains a SELL fill, not a matched round-trip. Break-even SELLs are counted.
+  - winRate stays null when there are no completed trades.
+  - Walk-forward aggregatePnl is explicitly unavailable for independent windows.
+  - Flat windows are counted. sampleTooSmall uses documented thresholds (3 windows, 5 trades) and is descriptive only.
+  - Positive window counts do not imply robustness.
+- No Phase 15 work performed.

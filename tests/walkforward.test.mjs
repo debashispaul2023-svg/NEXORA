@@ -7,6 +7,9 @@ import {
   buildWalkForwardWindows,
   runWalkForward,
 } from '../src/backtest/walkforward.mjs';
+import { buildBacktestMetrics } from '../src/backtest/metrics.mjs';
+
+
 import { existsSync } from 'node:fs';
 import { resolveProjectPath } from '../src/paths.mjs';
 
@@ -132,16 +135,50 @@ test('labels synthetic data and does not invent strategy P&L', async () => {
   assert.ok(result.note.includes('does not imply'));
 });
 
-test('aggregate counts profitable and unprofitable windows without hiding losses', async () => {
+test('aggregate P&L is unavailable and flat windows are counted', async () => {
+  const result = await runWalkForward(candles.slice(0, 20), {
+    warmupBars: 5,
+    evalBars: 5,
+    stepBars: 5,
+    initialCapital: 1000,
+  });
+  assert.equal(result.aggregatePnl, null);
+  assert.equal(result.aggregatePnlStatus, 'unavailable_independent_windows');
+  assert.equal(result.capitalModel, 'independent_per_window');
+  assert.ok(result.flatWindows >= 0);
+  assert.equal(
+    result.profitableWindows + result.unprofitableWindows + result.flatWindows,
+    result.windowsSucceeded,
+  );
+  assert.ok(result.sampleStatus === 'insufficient' || result.sampleStatus === 'adequate_for_description_only');
+  assert.ok(result.sampleTooSmall === true || result.sampleTooSmall === false);
+  assert.equal(result.windowDeltas.length, result.windowsSucceeded);
+});
+
+test('zero-trade metrics stay null rather than zero win rate', () => {
+  const m = buildBacktestMetrics({
+    initialCapital: 1000,
+    ledgerSnapshot: { cash: 1000, positionQty: 0, avgEntry: 0, realizedPnl: 0 },
+    ledgerEntries: [],
+    finalMark: 100,
+  });
+  assert.equal(m.completedTrades, 0);
+  assert.equal(m.winRate, null);
+  assert.equal(m.breakEvenTrades, 0);
+  assert.equal(m.sampleStatus, 'no_completed_trades');
+});
+
+test('losing windows are retained in the summary', async () => {
   const result = await runWalkForward(candles, {
     warmupBars: 5,
     evalBars: 10,
     stepBars: 10,
     initialCapital: 1000,
   });
-  const sum = result.profitableWindows + result.unprofitableWindows;
-  assert.ok(sum <= result.windowsSucceeded);
+  const sum = result.profitableWindows + result.unprofitableWindows + result.flatWindows;
+  assert.equal(sum, result.windowsSucceeded);
   assert.ok(result.bestWindow);
   assert.ok(result.worstWindow);
   assert.ok(result.worstWindow.delta <= result.bestWindow.delta);
 });
+
