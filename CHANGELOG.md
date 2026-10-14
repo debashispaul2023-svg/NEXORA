@@ -116,4 +116,10 @@
   - Walk-forward aggregatePnl is explicitly unavailable for independent windows.
   - Flat windows are counted. sampleTooSmall uses documented thresholds (3 windows, 5 trades) and is descriptive only.
   - Positive window counts do not imply robustness.
-- No Phase 15 work performed.
+- Phase 15: Historical dataset validation report.
+  - New src/market-data/dataset.mjs builds a deterministic report. Existing validators are unchanged.
+  - Errors: invalid timestamps, non-finite fields, OHLC violations, duplicates, out-of-order, empty series.
+  - TIME_GAP is a warning only when expectedIntervalMs is supplied. No session calendar is inferred.
+  - Zero volume and flat OHLC are informational. Data is not repaired.
+  - Backtest and walk-forward rejection behavior is unchanged.
+- No Phase 16 work performed.
