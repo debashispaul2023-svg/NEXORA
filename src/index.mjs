@@ -7,12 +7,13 @@ import { parseResearchArgs, runResearchCli } from './research/cli.mjs';
 /**
  * Application entry point.
  * Loads config, initializes data dirs, runs health check.
- * Supports --check and synthetic research flags (--backtest, --walk-forward).
+ * Supports --check, synthetic research flags, and --dashboard.
  * Paper trading only. Synthetic results do not imply profitability.
  */
 
 const args = process.argv.slice(2);
 const checkOnly = args.includes('--check');
+const dashboard = args.includes('--dashboard');
 
 async function main() {
   try {
@@ -44,6 +45,13 @@ async function main() {
     if (checkOnly) {
       logger.info('Check-only mode complete — exiting 0');
       process.exit(0);
+    }
+
+    if (dashboard) {
+      const { startDashboard } = await import('./dashboard/server.mjs');
+      await startDashboard({ port: config.runtime.dashboardPort });
+      logger.info('Dashboard running. Local only. Paper trading only. Ctrl+C to stop.');
+      return;
     }
 
     if (researchFlags.backtest || researchFlags.walkForward || researchFlags.paper

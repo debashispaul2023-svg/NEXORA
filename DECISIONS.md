@@ -20,7 +20,11 @@ Record material decisions here. Do not silently reverse a decision; propose a ch
 
 ## D-005 — Dashboard
 - Decision: Next.js-based dashboard; target port 3002.
-- Status: Planned; confirm dependencies and version compatibility before installation.
+- Status: Superseded by D-026 for Phase 22. Port 3002 retained.
+
+## D-026 — Phase 22 dashboard architecture
+- Decision: Implement the central dashboard with Node.js built-in `http` and a vanilla HTML/CSS/JS frontend. No Next.js and no new dependencies. Bind to 127.0.0.1 only because no authentication exists. Reuse existing modules. Do not invent metrics or enable live trading.
+- Status: Implemented.
 
 ## D-006 — Phase 1 foundation scope
 - Decision: Phase 1 implements only centralized config/validation, safe path utilities, structured logging, error handling, idempotent data-dir init, minimal entry point, and foundation tests. No trading, market-data, strategy, execution, learning, or dashboard code.

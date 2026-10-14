@@ -1,28 +1,31 @@
 # Current State — Update After Every Approved Phase
 
 ## Current status
-- Phase: 21 — AI research agent (mock provider)
-- Implementation status: Hypotheses, proposal queue, AI memory notes, and CLI flags added.
+- Phase: 22 — Central dashboard and research workflow integration
+- Implementation status: Local dashboard server, pages, and API adapters added.
 - Last verified repository root: /workspace/artifacts/NEXORA_FabInvests_Starter
-- Phase 20 pushed: f482c42e28eef34bd27d7a332648311d93007bbf
-- Tests this session: AI research 7/7; full suite 214/214
+- Phase 21 commit: 5c54b265c586b26d737f2de873a1050110aa84d5
+- Tests this session: dashboard 6/6; full suite 220/220
 - Deployment: NOT CONFIGURED
 
 ## Current objective
-Phase 21 implemented. Do not start Phase 22.
+Phase 22 implemented. Do not start Phase 23.
 
 ## Approved decisions
 - Paper trading only
-- Phase 20: experiment tracking and research-only promotion
-- Phase 21: mock AI research assistant; no live trading; no paid AI by default
+- Phase 22 dashboard is local-only Node http + vanilla UI. No Next.js dependency.
+- Mock AI remains the default. Dashboard does not enable live trading.
 
 ## Known limitations
+- Dashboard has no authentication and binds to 127.0.0.1 only.
+- Not safe for public internet exposure.
 - Mock provider only. External models are unavailable unless explicitly configured later.
 - AI output is untrusted and schema-validated. Missing provider does not fabricate responses.
 - Learning notes are interpretations, not model training.
 - Promotion never enables live trading.
 - Multi-process experiment writers unsupported.
 - Synthetic results do not imply profitability.
+- Dashboard does not fetch external market data on open.
 
 ## Next approved action
-Commit Phase 21. Do not start Phase 22 without approval.
+Commit Phase 22 if tests pass. Do not start Phase 23 without approval.

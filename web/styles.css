@@ -1,0 +1,145 @@
+:root {
+  --bg: #070b14;
+  --bg-elev: #101826;
+  --bg-card: #121c2e;
+  --line: #1e2b44;
+  --text: #e8eefc;
+  --muted: #8ea0c0;
+  --accent: #3b82f6;
+  --accent-2: #22d3ee;
+  --danger: #f87171;
+  --warn: #fbbf24;
+  --ok: #34d399;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+a { color: var(--accent-2); text-decoration: none; }
+button, input, select { font: inherit; color: inherit; }
+
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 250px;
+  background: #0b1220;
+  border-right: 1px solid var(--line);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.brand { display: flex; gap: 12px; align-items: center; }
+.brand-img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
+.brand-name { font-weight: 700; letter-spacing: 0.08em; }
+.brand-tag { color: var(--muted); font-size: 12px; }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav a {
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text);
+}
+.nav a.active, .nav a:hover { background: #16233a; color: var(--accent-2); }
+.sidebar-foot { margin-top: auto; color: var(--muted); font-size: 12px; }
+
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(7, 11, 20, 0.9);
+  position: sticky;
+  top: 0;
+}
+.topbar h1 { margin: 0; font-size: 20px; flex: 1; }
+.menu-btn {
+  display: none;
+  background: #16233a;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.status-pill {
+  background: #10261f;
+  color: var(--ok);
+  border: 1px solid #1f5c48;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.content { padding: 20px; display: grid; gap: 16px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.card h2, .card h3 { margin: 0 0 8px; font-size: 15px; }
+.metric { font-size: 28px; font-weight: 700; }
+.muted { color: var(--muted); }
+.ok { color: var(--ok); }
+.warn { color: var(--warn); }
+.danger { color: var(--danger); }
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  margin-right: 6px;
+}
+.badge.mock { color: var(--warn); border-color: #5a4a1e; }
+.badge.ok { color: var(--ok); border-color: #1f5c48; }
+.badge.bad { color: var(--danger); border-color: #5c2a2a; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+input, select {
+  background: #0d1524;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.btn {
+  background: var(--accent);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.btn.secondary { background: #1b2944; }
+.stages { display: flex; flex-wrap: wrap; gap: 8px; }
+.stage {
+  flex: 1 1 140px;
+  background: #0d1524;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+.stage.ready { border-color: #1f5c48; }
+.empty, .error-box {
+  padding: 16px;
+  border-radius: 12px;
+  background: #0d1524;
+  border: 1px dashed var(--line);
+}
+.error-box { border-color: #5c2a2a; color: var(--danger); }
+
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    transform: translateX(-105%);
+    z-index: 20;
+    transition: transform 0.2s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .menu-btn { display: inline-block; }
+  .content { padding: 14px; }
+}

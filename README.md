@@ -39,6 +39,9 @@ npm run check      # Validation-only mode (--check)
 npm run init-data  # Explicit data-directory initialization
 npm test           # Run all tests (node:test, serial)
 
+# Local dashboard (paper only; binds 127.0.0.1; no authentication)
+node src/index.mjs --dashboard
+
 # Synthetic research (paper only; not a profitability claim)
 node src/index.mjs --backtest
 node src/index.mjs --walk-forward
@@ -187,6 +190,17 @@ node src/index.mjs --backtest --provider=alphavantage --symbol=IBM
 - Commands: `--ai-status`, `--hypotheses --experiment-id=ID`, `--list-hypotheses`, `--propose --hypothesis-id=ID`, `--list-proposals`, `--validate-proposal --proposal-id=ID`.
 - Hypotheses and proposals do not submit orders or change strategy configuration.
 - AI memory notes are interpretations, not model training. Promotion remains research-only.
+
+### Phase 22 — Central dashboard
+- Local research terminal: `node src/index.mjs --dashboard`
+- Default URL: `http://127.0.0.1:3002` (from `runtime.dashboardPort`)
+- Binds to loopback only. No authentication. Not for public internet exposure.
+- Pages: Overview, Market Data, Experiments, AI Learning, Proposals, Risk & Paper, Learning Loop.
+- Reads existing registries and snapshots. Does not invent metrics.
+- Mock AI output is labeled. Unavailable provider shows unavailable.
+- Proposal validation is the only state-changing action and calls the existing deterministic validator. It does not execute trades.
+- Dashboard does not fetch external market data on open.
+- Zero new dependencies. Node.js built-in `http` only.
 
 ### Safety
 - Paper trading only. No real orders or credentials.

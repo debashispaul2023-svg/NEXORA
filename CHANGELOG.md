@@ -1,6 +1,15 @@
 # Changelog
 
 ## Unreleased
+- Phase 22: Central dashboard and research workflow integration.
+  - `src/dashboard/server.mjs`: local-only Node `http` server on 127.0.0.1.
+  - `src/dashboard/adapters.mjs`: read models over existing experiment, AI, paper, audit, and market-cache modules.
+  - `web/`: responsive research terminal pages. No invented metrics.
+  - `--dashboard` entry flag. Proposal validation is the only mutating action and reuses existing deterministic validation.
+  - Non-loopback bind refused. No authentication. No live trading endpoints.
+  - Zero new dependencies.
+
+## Unreleased
 - Added project identity and repository safety rules.
 - Added planned architecture and path map.
 - Added persistent current-state, decision, and task-protocol files.
