@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Dashboard visual redesign: violet research-terminal theme, DEMO/PAPER indicator, light metric cards, status bars from stored counts, mobile drawer, and structured empty/error states. No new metrics and no backend changes.
+
+## Unreleased
 - Phase 22: Central dashboard and research workflow integration.
   - `src/dashboard/server.mjs`: local-only Node `http` server on 127.0.0.1.
   - `src/dashboard/adapters.mjs`: read models over existing experiment, AI, paper, audit, and market-cache modules.

@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
   <title>NEXORA — Research Terminal</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Primary">
       <div class="brand">
         <img src="/branding/nexora-bot.png" alt="NEXORA" class="brand-img" />
         <div>
@@ -16,25 +17,38 @@
           <div class="brand-tag">Research · Paper · AI</div>
         </div>
       </div>
+      <div class="mode-chip" aria-label="Trading mode">DEMO / PAPER MODE</div>
+      <p class="nav-label">Workspace</p>
       <nav class="nav" id="nav">
-        <a href="#overview" data-page="overview">Overview</a>
-        <a href="#market" data-page="market">Market Data</a>
-        <a href="#experiments" data-page="experiments">Experiments</a>
-        <a href="#ai" data-page="ai">AI Learning</a>
-        <a href="#proposals" data-page="proposals">Proposals</a>
-        <a href="#paper" data-page="paper">Risk & Paper</a>
-        <a href="#loop" data-page="loop">Learning Loop</a>
+        <a href="#overview" data-page="overview"><span class="ico" aria-hidden="true">◉</span> Overview</a>
+        <a href="#market" data-page="market"><span class="ico" aria-hidden="true">◈</span> Market Data</a>
+        <a href="#experiments" data-page="experiments"><span class="ico" aria-hidden="true">▣</span> Experiments</a>
+        <a href="#ai" data-page="ai"><span class="ico" aria-hidden="true">✦</span> AI Learning</a>
+        <a href="#proposals" data-page="proposals"><span class="ico" aria-hidden="true">◎</span> Proposals</a>
+        <a href="#paper" data-page="paper"><span class="ico" aria-hidden="true">◇</span> Risk & Paper</a>
+        <a href="#loop" data-page="loop"><span class="ico" aria-hidden="true">↻</span> Learning Loop</a>
       </nav>
-      <div class="sidebar-foot">Local only · Paper trading · No live orders</div>
+      <div class="sidebar-foot">
+        Local only · 127.0.0.1<br />
+        No live orders · No authentication
+      </div>
     </aside>
+    <button class="overlay" id="overlay" aria-label="Close menu" tabindex="-1"></button>
     <main class="main">
       <header class="topbar">
-        <button class="menu-btn" id="menuBtn" aria-label="Open menu">Menu</button>
-        <h1 id="pageTitle">Overview</h1>
-        <div class="status-pill" id="livePill">Paper only</div>
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">Menu</button>
+        <div class="title-block">
+          <h1 id="pageTitle">Overview</h1>
+          <p id="pageSub" class="page-sub">Paper research terminal</p>
+        </div>
+        <div class="status-pill" id="livePill">DEMO / PAPER MODE</div>
       </header>
       <section id="content" class="content" aria-live="polite">
-        <p class="muted">Loading…</p>
+        <div class="skeleton-grid" aria-busy="true">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+        </div>
       </section>
     </main>
   </div>
