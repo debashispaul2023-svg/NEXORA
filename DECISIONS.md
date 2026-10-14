@@ -87,8 +87,11 @@ Record material decisions here. Do not silently reverse a decision; propose a ch
 - Status: Implemented and tested.
 
 ## Pending decisions
-- Exact market-data providers and their limits/terms (deferred).
 - Cloud backup policy (R2 / Supabase) — deferred.
 - Deployment target.
 - Non-UTC timezone support for trading-day boundary (currently UTC only).
 - Additional strategies or evaluation horizons (deferred).
+
+## D-022 — Phase 18 Alpha Vantage daily adapter
+- Decision: Phase 18 adds a read-only Alpha Vantage adapter for daily equity OHLCV (TIME_SERIES_DAILY, compact). Synthetic remains the default research source. Network access is opt-in via --provider=alphavantage and --symbol. API key is read from FABINVESTS_ALPHAVANTAGE_KEY and is never logged. Cache stores provenance and retrieval time. Data is historical/delayed, not real-time. Unlimited free tier is not claimed. No secondary provider in this phase.
+- Status: Implemented. Offline tests only.

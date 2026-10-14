@@ -1,31 +1,32 @@
 # Current State — Update After Every Approved Phase
 
 ## Current status
-- Phase: 17 — Documentation reconciliation + minimal synthetic research CLI
-- Implementation status: Research CLI reuses BacktestEngine and runWalkForward. Docs updated through Phase 17.
-- Last verified repository root: /home/workdir/artifacts/NEXORA_FabInvests_Starter
-- Last verified commit: verify with git log (Phase 16 reported as b149294 locally; may be ahead of origin)
-- Tests: run npm test after Phase 17 changes
+- Phase: 18 — Alpha Vantage read-only daily equity adapter
+- Implementation status: Provider interface, cache, and CLI opt-in. Synthetic remains default.
+- Last verified repository root: /workspace/artifacts/NEXORA_FabInvests_Starter
+- Last verified commit: 3cf8503184e0d7ab6e6d459dd8426714c37de73b (Phase 17, local; not pushed)
+- Tests: run npm test after Phase 18 changes
 - Deployment: NOT CONFIGURED
 
 ## Current objective
-Phase 17 complete when tests pass. Do not start Phase 18 automatically.
+Phase 18 implementation in progress. Do not start Phase 19.
 
 ## Approved decisions
 - Paper trading only
 - Phase 1–9.1: foundation through audit remediation
 - Phase 10–14: deterministic backtest, validation, walk-forward, metric reliability
-- Phase 15–16: dataset quality report (standalone then attached to results)
-- Phase 17: docs reconciliation + synthetic research CLI entry points
+- Phase 15–16: dataset quality report
+- Phase 17: synthetic research CLI
+- Phase 18: Alpha Vantage daily adapter (opt-in, not real-time)
 
 ## Known limitations
-- End-of-bar fill model (signal and fill on candle t close). Not next-bar-open.
-- Strategy-level P&L unavailable. aggregatePnl is unavailable for independent windows.
+- End-of-bar fill model. Strategy-level P&L unavailable. aggregatePnl unavailable.
 - Multi-process safety not claimed. Exactly-once writes not claimed.
 - Synthetic results do not imply profitability.
-- No live data, no learning, no cloud.
-- TIME_GAP is a warning only when expectedIntervalMs is supplied. No session calendar.
+- Alpha Vantage free tier is 25 requests/day. Compact daily history only (~100 points). Full history is premium.
+- Unlimited free tier is not claimed.
+- Daily data is delayed/historical, not real-time.
 - Symlink escape test remains NOT VERIFIED (EPERM).
 
 ## Next approved action
-Verify Phase 17 tests. Do not push or start Phase 18 without approval.
+Verify Phase 18 tests. Do not push or start Phase 19 without approval.

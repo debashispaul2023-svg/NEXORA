@@ -1,6 +1,7 @@
 import { generateSyntheticSeries } from '../market-data/fixtures.mjs';
 import { BacktestEngine } from '../backtest/engine.mjs';
 import { runWalkForward } from '../backtest/walkforward.mjs';
+import { fetchValidatedDaily } from '../market-data/provider.mjs';
 import { logger } from '../logger.mjs';
 
 /**
@@ -43,6 +44,8 @@ export function parseResearchArgs(args) {
     evalBars: 10,
     stepBars: 10,
     expectedIntervalMs: undefined,
+    provider: 'synthetic',
+    symbol: null,
   };
 
   for (const arg of args) {
@@ -59,6 +62,10 @@ export function parseResearchArgs(args) {
     else if (arg.startsWith('--step-bars=')) flags.stepBars = parsePositiveInt(arg.slice(12), 'step-bars', 10);
     else if (arg.startsWith('--expected-interval-ms=')) {
       flags.expectedIntervalMs = parsePositiveInt(arg.slice(23), 'expected-interval-ms', undefined);
+    } else if (arg.startsWith('--provider=')) {
+      flags.provider = arg.slice(11).trim().toLowerCase() || 'synthetic';
+    } else if (arg.startsWith('--symbol=')) {
+      flags.symbol = arg.slice(9).trim().toUpperCase();
     }
   }
 
@@ -116,12 +123,36 @@ export async function runResearchCli(flags, configCapital = {}) {
   }
 
   const capital = flags.capital ?? configCapital.initialVirtualCapital ?? 1000;
-  const candles = generateSyntheticSeries({
-    count: flags.count,
-    intervalMs: flags.intervalMs,
-    startPrice: 100,
-    startTs: Date.UTC(2026, 0, 1),
-  });
+  let candles;
+  let provenance = { provider: 'synthetic', realtime: false };
+
+  if (!flags.provider || flags.provider === 'synthetic') {
+    candles = generateSyntheticSeries({
+      count: flags.count,
+      intervalMs: flags.intervalMs,
+      startPrice: 100,
+      startTs: Date.UTC(2026, 0, 1),
+    });
+  } else {
+    if (!flags.symbol) {
+      throw new Error('--symbol is required when --provider is not synthetic');
+    }
+    const fetched = await fetchValidatedDaily({
+      provider: flags.provider,
+      symbol: flags.symbol,
+      expectedIntervalMs: flags.expectedIntervalMs,
+    });
+    candles = fetched.candles;
+    provenance = fetched.provenance || provenance;
+    logger.info('Market data loaded (not real-time)', {
+      provider: flags.provider,
+      symbol: flags.symbol,
+      cacheStatus: fetched.cacheStatus,
+      seriesCount: candles.length,
+      realtime: false,
+      warning: fetched.warning || null,
+    });
+  }
 
   if (flags.backtest) {
     const engine = new BacktestEngine({

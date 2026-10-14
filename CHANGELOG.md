@@ -132,4 +132,9 @@
   - Entry flags: --backtest, --walk-forward (optional --count, --capital, window sizes).
   - CURRENT_STATE and README updated. Synthetic results do not imply profitability.
   - No live data, no new dependencies, no learning.
-- No Phase 18 work performed.
+- Phase 18: Alpha Vantage read-only daily equity adapter.
+  - Provider interface plus alphavantage adapter. Synthetic remains the default.
+  - Daily TIME_SERIES_DAILY compact only. Not real-time. Free tier 25 requests/day.
+  - Local JSON cache with freshness and provenance. Missing key fails closed.
+  - Offline tests use mocks. No network in the test suite.
+- No Phase 19 work performed.

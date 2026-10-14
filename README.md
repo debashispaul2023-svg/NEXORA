@@ -40,6 +40,10 @@ node src/index.mjs --backtest
 node src/index.mjs --walk-forward
 node src/index.mjs --backtest --count=40 --capital=1000
 node src/index.mjs --walk-forward --count=40 --warmup-bars=5 --eval-bars=10 --step-bars=10
+
+# Optional daily equity data (not real-time). Requires FABINVESTS_ALPHAVANTAGE_KEY.
+# Synthetic remains the default. No network call unless --provider is set.
+node src/index.mjs --backtest --provider=alphavantage --symbol=IBM
 ```
 
 ### Configuration
@@ -148,6 +152,13 @@ node src/index.mjs --walk-forward --count=40 --warmup-bars=5 --eval-bars=10 --st
 - `src/research/cli.mjs` drives synthetic backtest/walk-forward via existing engines (no duplicated logic).
 - Flags: `--backtest`, `--walk-forward`, optional `--count`, `--capital`, window sizes, `--expected-interval-ms`.
 - Output is structured logs. Synthetic only. Not a claim of future performance.
+
+### Phase 18 — Alpha Vantage daily adapter
+- Read-only `TIME_SERIES_DAILY` (compact). Not real-time.
+- Opt-in: `--provider=alphavantage --symbol=IBM`. Synthetic remains default.
+- Key from `FABINVESTS_ALPHAVANTAGE_KEY`. Missing key fails closed.
+- Local cache under `data/market/` with provenance and 24-hour default freshness.
+- Free tier: 25 requests/day. Unlimited educational tier is not claimed.
 
 ### Safety
 - Paper trading only. No real orders or credentials.
