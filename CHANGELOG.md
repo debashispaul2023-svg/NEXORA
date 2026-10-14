@@ -142,4 +142,13 @@
   - Invalid series and stale provider cache are rejected before mutation.
   - Duplicate candle identity is skipped. Synthetic mode stays independent.
   - --paper flag is opt-in. No live orders. No learning.
-- No Phase 20 work performed.
+- Phase 20: Strategy experiment tracking foundation (hardened).
+  - Local experiment registry, evaluation wrapper, learning records, and promotion gate.
+  - Registry/learning storage: same-dir temp + fsync + rename; .bak rotation; malformed data throws (never silent empty replace).
+  - Same-process non-reentrant write mutex; multi-process writers unsupported.
+  - Stable config fingerprints (key-order independent). Missing provenance is unknown, not invented.
+  - Invalid datasets fail evaluation before completion; out-of-sample only for walk-forward.
+  - Promotion treats missing evidence as missing; liveTradingEnabled always false.
+  - Learning records are idempotent per experimentId; provisional when sample insufficient.
+  - Reuses existing backtest and walk-forward engines. No external AI model required.
+  - No Phase 21 work performed.

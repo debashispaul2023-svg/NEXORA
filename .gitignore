@@ -23,6 +23,7 @@ data/backtests/
 data/runtime/
 data/cache/
 data/market/
+data/experiments/
 !data/**/.gitkeep
 
 

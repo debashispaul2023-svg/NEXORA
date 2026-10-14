@@ -1,5 +1,9 @@
 # NEXORA / FabInvests Starter
 
+<p align="center">
+  <img src="assets/branding/nexora-bot.png" alt="NEXORA bot — quantitative research, paper trading, AI learning" width="320" />
+</p>
+
 This starter pack provides repository guardrails and project memory files so an AI coding agent can keep track of the project, paths, phase, and decisions.
 
 ## First steps
@@ -166,6 +170,16 @@ node src/index.mjs --backtest --provider=alphavantage --symbol=IBM
 - Duplicate candle identity (`provider:symbol:timestamp`) is skipped.
 - Opt-in: `node src/index.mjs --paper`. Synthetic remains separate from provider-backed runs.
 - No live exchange orders. No AI learning.
+
+### Phase 20 — Experiment foundation
+- Local registry under `data/experiments/` (gitignored runtime data).
+- Storage: temp + fsync + rename with `.bak` rotation. Malformed registry throws; never silently emptied.
+- Same-process write serialization; multi-process writers are not supported.
+- Config fingerprints are stable under object key reordering.
+- Evaluation reuses `BacktestEngine` and walk-forward. Invalid series fail closed. No fill or accounting changes.
+- Learning records require a completed experiment; one record per experiment (idempotent); provisional when sample insufficient.
+- Promotion requires completion, dataset quality, sample size, out-of-sample (walk-forward), and finite drawdown evidence where required. Missing evidence blocks. `liveTradingEnabled` is always false.
+- No external AI model is required.
 
 ### Safety
 - Paper trading only. No real orders or credentials.

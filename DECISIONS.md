@@ -99,3 +99,8 @@ Record material decisions here. Do not silently reverse a decision; propose a ch
 ## D-023 — Phase 19 paper data integration
 - Decision: Validated candles enter the existing PaperTradingWorkflow through a thin paper session. Invalid series and stale provider cache are rejected before any engine or ledger mutation. Duplicate candle identity is skipped within a session and when prior identities are supplied. Synthetic research remains the default and is separate from provider-backed paper runs. No schema change. No live orders. Exactly-once across crashes or processes is not claimed.
 - Status: Implemented. Offline tests only.
+
+## D-024 — Phase 20 experiment foundation
+- Decision: Phase 20 adds a local experiment registry, evaluation wrapper, evidence-linked learning records, and a promotion gate. Existing engines are reused. Promotion is research-only and never enables live trading. Highest return alone is not sufficient. No external AI service is required. TradingAgents, Paperclip, and OpenBB informed separation of evaluation, approval, and data provenance; no framework was imported.
+- Hardening: atomic tmp+fsync+rename registry writes; same-process write mutex; stable fingerprints; missing provenance = unknown; malformed store throws; promotion treats missing evidence as blocking; liveTradingEnabled always false.
+- Status: Implemented and hardened. Offline tests only. Multi-process writers unsupported.
