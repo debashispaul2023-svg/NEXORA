@@ -160,6 +160,13 @@ node src/index.mjs --backtest --provider=alphavantage --symbol=IBM
 - Local cache under `data/market/` with provenance and 24-hour default freshness.
 - Free tier: 25 requests/day. Unlimited educational tier is not claimed.
 
+### Phase 19 — Paper integration
+- `src/paper/session.mjs` passes validated candles into the existing paper workflow.
+- Invalid candles and stale provider cache are rejected before any mutation.
+- Duplicate candle identity (`provider:symbol:timestamp`) is skipped.
+- Opt-in: `node src/index.mjs --paper`. Synthetic remains separate from provider-backed runs.
+- No live exchange orders. No AI learning.
+
 ### Safety
 - Paper trading only. No real orders or credentials.
 - All paths resolved from verified project root and canonicalized with realpathSync (resists symlink escapes where creation is permitted).

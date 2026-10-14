@@ -2,6 +2,7 @@ import { generateSyntheticSeries } from '../market-data/fixtures.mjs';
 import { BacktestEngine } from '../backtest/engine.mjs';
 import { runWalkForward } from '../backtest/walkforward.mjs';
 import { fetchValidatedDaily } from '../market-data/provider.mjs';
+import { runPaperSession } from '../paper/session.mjs';
 import { logger } from '../logger.mjs';
 
 /**
@@ -36,6 +37,7 @@ export function parseResearchArgs(args) {
   const flags = {
     backtest: args.includes('--backtest'),
     walkForward: args.includes('--walk-forward'),
+    paper: args.includes('--paper'),
     count: 40,
     capital: 1000,
     slippageBps: 0,
@@ -118,13 +120,14 @@ function printWalkForwardSummary(result) {
  * @param {{ initialVirtualCapital?: number }} [configCapital]
  */
 export async function runResearchCli(flags, configCapital = {}) {
-  if (!flags.backtest && !flags.walkForward) {
+  if (!flags.backtest && !flags.walkForward && !flags.paper) {
     return { ran: false };
   }
 
   const capital = flags.capital ?? configCapital.initialVirtualCapital ?? 1000;
   let candles;
   let provenance = { provider: 'synthetic', realtime: false };
+  let cacheStatus = 'synthetic';
 
   if (!flags.provider || flags.provider === 'synthetic') {
     candles = generateSyntheticSeries({
@@ -144,6 +147,7 @@ export async function runResearchCli(flags, configCapital = {}) {
     });
     candles = fetched.candles;
     provenance = fetched.provenance || provenance;
+    cacheStatus = fetched.cacheStatus || 'unknown';
     logger.info('Market data loaded (not real-time)', {
       provider: flags.provider,
       symbol: flags.symbol,
@@ -181,6 +185,27 @@ export async function runResearchCli(flags, configCapital = {}) {
     }
     const result = await runWalkForward(candles, opts);
     printWalkForwardSummary(result);
+  }
+
+  if (flags.paper) {
+    const paper = await runPaperSession({
+      candles,
+      provenance,
+      cacheStatus,
+      initialCapital: capital,
+      slippageBps: flags.slippageBps,
+      expectedIntervalMs: flags.expectedIntervalMs,
+      audit: false,
+    });
+    logger.info('Paper session complete (simulated, not real trading)', {
+      synthetic: paper.synthetic,
+      provider: paper.provenance.provider,
+      seriesCount: paper.seriesCount,
+      mutated: paper.mutated,
+      cash: paper.snapshot.cash,
+      positionQty: paper.snapshot.positionQty,
+      realtime: false,
+    });
   }
 
   return { ran: true };

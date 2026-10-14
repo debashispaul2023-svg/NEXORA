@@ -95,3 +95,7 @@ Record material decisions here. Do not silently reverse a decision; propose a ch
 ## D-022 — Phase 18 Alpha Vantage daily adapter
 - Decision: Phase 18 adds a read-only Alpha Vantage adapter for daily equity OHLCV (TIME_SERIES_DAILY, compact). Synthetic remains the default research source. Network access is opt-in via --provider=alphavantage and --symbol. API key is read from FABINVESTS_ALPHAVANTAGE_KEY and is never logged. Cache stores provenance and retrieval time. Data is historical/delayed, not real-time. Unlimited free tier is not claimed. No secondary provider in this phase.
 - Status: Implemented. Offline tests only.
+
+## D-023 — Phase 19 paper data integration
+- Decision: Validated candles enter the existing PaperTradingWorkflow through a thin paper session. Invalid series and stale provider cache are rejected before any engine or ledger mutation. Duplicate candle identity is skipped within a session and when prior identities are supplied. Synthetic research remains the default and is separate from provider-backed paper runs. No schema change. No live orders. Exactly-once across crashes or processes is not claimed.
+- Status: Implemented. Offline tests only.

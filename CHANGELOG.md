@@ -137,4 +137,9 @@
   - Daily TIME_SERIES_DAILY compact only. Not real-time. Free tier 25 requests/day.
   - Local JSON cache with freshness and provenance. Missing key fails closed.
   - Offline tests use mocks. No network in the test suite.
-- No Phase 19 work performed.
+- Phase 19: Paper integration of validated market data.
+  - src/paper/session.mjs feeds validated candles into the existing workflow.
+  - Invalid series and stale provider cache are rejected before mutation.
+  - Duplicate candle identity is skipped. Synthetic mode stays independent.
+  - --paper flag is opt-in. No live orders. No learning.
+- No Phase 20 work performed.
