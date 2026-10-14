@@ -182,3 +182,33 @@ test('losing windows are retained in the summary', async () => {
   assert.ok(result.worstWindow.delta <= result.bestWindow.delta);
 });
 
+test('walk-forward attaches one full-series dataset report', async () => {
+  const result = await runWalkForward(candles.slice(0, 20), {
+    warmupBars: 5,
+    evalBars: 5,
+    stepBars: 5,
+    initialCapital: 1000,
+  });
+  assert.equal(result.datasetReport.ok, true);
+  assert.equal(result.aggregatePnl, null);
+  assert.equal(result.capitalModel, 'independent_per_window');
+  assert.ok(result.windows.length >= 1);
+});
+
+test('walk-forward gap warning is opt-in and does not fail the run', async () => {
+  const gapped = candles.slice(0, 16).map((c, i) => (
+    i === 0 ? c : { ...c, timestamp: c.timestamp + 120_000 }
+  ));
+  const plain = await runWalkForward(gapped, { warmupBars: 4, evalBars: 4, stepBars: 4 });
+  assert.equal(plain.datasetReport.issues.filter((i) => i.code === 'TIME_GAP').length, 0);
+
+  const warned = await runWalkForward(gapped, {
+    warmupBars: 4,
+    evalBars: 4,
+    stepBars: 4,
+    expectedIntervalMs: 60_000,
+  });
+  assert.equal(warned.datasetReport.ok, true);
+  assert.ok(warned.datasetReport.issues.some((i) => i.code === 'TIME_GAP'));
+  assert.equal(warned.aggregatePnl, null);
+});

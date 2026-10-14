@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { unlinkSync, existsSync } from 'node:fs';
+import { unlinkSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolveProjectPath } from '../src/paths.mjs';
 import { validateHistoricalSeries } from '../src/backtest/input.mjs';
 import { BacktestEngine } from '../src/backtest/engine.mjs';
@@ -244,5 +244,48 @@ test('saved run has schema version and does not alter paper state', async () => 
   cleanRun(result.runId);
 });
 
+test('successful backtest includes an OK dataset report', async () => {
+  const engine = new BacktestEngine({ initialCapital: 1000, audit: false });
+  const result = await engine.run(candles);
+  assert.equal(result.datasetReport.ok, true);
+  assert.equal(result.datasetReport.errorCount, 0);
+  assert.equal(result.metrics.startingCapital, 1000);
+});
 
+test('invalid series still throws before a result is returned', async () => {
+  const engine = new BacktestEngine({ initialCapital: 1000, audit: false });
+  await assert.rejects(() => engine.run([{ timestamp: 'bad' }]), MarketDataError);
+});
 
+test('gap warning appears only with expectedIntervalMs and does not fail the run', async () => {
+  const gapped = [
+    candles[0],
+    { ...candles[1], timestamp: candles[0].timestamp + 180_000 },
+  ];
+  const engine = new BacktestEngine({ initialCapital: 1000, audit: false });
+  const plain = await engine.run(gapped);
+  assert.equal(plain.datasetReport.issues.filter((i) => i.code === 'TIME_GAP').length, 0);
+  assert.ok(Number.isFinite(plain.metrics.endingEquity));
+
+  const warned = await engine.run(gapped, {}, { expectedIntervalMs: 60_000 });
+  assert.equal(warned.datasetReport.ok, true);
+  assert.ok(warned.datasetReport.issues.some((i) => i.code === 'TIME_GAP' && i.severity === 'warning'));
+  assert.ok(Number.isFinite(warned.metrics.endingEquity));
+});
+
+test('legacy persisted records without datasetReport remain readable', () => {
+  const runId = 'legacy-no-report';
+  const path = resolveProjectPath(`data/backtests/${runId}.json`);
+  mkdirSync(resolveProjectPath('data/backtests'), { recursive: true });
+  writeFileSync(path, JSON.stringify({
+    schemaVersion: 1,
+    runId,
+    seriesIdentity: 'abc',
+    metrics: { startingCapital: 1000 },
+  }), 'utf8');
+  const loaded = loadBacktestRun(runId);
+  assert.equal(loaded.schemaVersion, 1);
+  assert.equal(loaded.datasetReport, undefined);
+  assert.equal(loaded.metrics.startingCapital, 1000);
+  cleanRun(runId);
+});

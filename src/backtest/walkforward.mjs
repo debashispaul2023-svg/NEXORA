@@ -2,6 +2,7 @@ import { validateHistoricalSeries } from './input.mjs';
 import { BacktestEngine } from './engine.mjs';
 import { MarketDataError } from '../errors.mjs';
 import { STRATEGY_ID, STRATEGY_VERSION } from '../strategies/baseline.mjs';
+import { buildDatasetReport } from '../market-data/dataset.mjs';
 
 /**
  * Fixed-parameter walk-forward evaluation.
@@ -139,7 +140,7 @@ export async function runWalkForward(candles, opts = {}) {
     }
   }
 
-  return summarizeWalkForward({
+  const summary = summarizeWalkForward({
     seriesIdentity: validated.identity,
     seriesCount: series.length,
     config,
@@ -150,6 +151,10 @@ export async function runWalkForward(candles, opts = {}) {
     failed,
     synthetic: series.some((c) => c.source === 'synthetic'),
   });
+  summary.datasetReport = buildDatasetReport(series, {
+    expectedIntervalMs: opts.expectedIntervalMs,
+  });
+  return summary;
 }
 
 export function summarizeWalkForward({

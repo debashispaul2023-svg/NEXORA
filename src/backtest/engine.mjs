@@ -5,6 +5,7 @@ import { StrategyRunner } from '../strategies/runner.mjs';
 import { evaluateBaseline, STRATEGY_ID, STRATEGY_VERSION } from '../strategies/baseline.mjs';
 import { validateHistoricalSeries } from './input.mjs';
 import { buildBacktestMetrics } from './metrics.mjs';
+import { buildDatasetReport } from '../market-data/dataset.mjs';
 import { randomUUID } from 'node:crypto';
 
 /**
@@ -51,12 +52,17 @@ export class BacktestEngine {
    * Run a backtest on a historical series.
    * @param {object[]} candles
    * @param {object} [params] - strategy params
+   * @param {object} [runOpts]
+   * @param {number} [runOpts.expectedIntervalMs] - opt-in gap warning interval
    * @returns {object} run result
    */
-  async run(candles, params = {}) {
+  async run(candles, params = {}, runOpts = {}) {
     const validated = validateHistoricalSeries(candles);
     const runId = randomUUID();
     const series = validated.series;
+    const datasetReport = buildDatasetReport(series, {
+      expectedIntervalMs: runOpts.expectedIntervalMs,
+    });
 
     const engine = new PaperExecutionEngine({ slippageBps: this.slippageBps });
     const ledger = new AccountingLedger({ initialCapital: this.initialCapital });
@@ -124,6 +130,7 @@ export class BacktestEngine {
       signals,
       metrics,
       finalSnapshot: finalSnap,
+      datasetReport,
     };
   }
 }

@@ -122,4 +122,9 @@
   - TIME_GAP is a warning only when expectedIntervalMs is supplied. No session calendar is inferred.
   - Zero volume and flat OHLC are informational. Data is not repaired.
   - Backtest and walk-forward rejection behavior is unchanged.
-- No Phase 16 work performed.
+- Phase 16: Dataset report attached to successful results.
+  - Backtest and walk-forward results include datasetReport after validation succeeds.
+  - expectedIntervalMs is optional. TIME_GAP remains a warning and does not fail a run.
+  - Existing result fields, fills, metrics, and aggregatePnl are unchanged.
+  - Backtest schema version remains 1. Legacy records without datasetReport remain readable.
+- No Phase 17 work performed.
