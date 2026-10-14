@@ -33,7 +33,13 @@ cp .env.example .env
 npm start          # Run foundation entry point (loads config, inits data dirs, health check)
 npm run check      # Validation-only mode (--check)
 npm run init-data  # Explicit data-directory initialization
-npm test           # Run foundation tests (node:test)
+npm test           # Run all tests (node:test, serial)
+
+# Synthetic research (paper only; not a profitability claim)
+node src/index.mjs --backtest
+node src/index.mjs --walk-forward
+node src/index.mjs --backtest --count=40 --capital=1000
+node src/index.mjs --walk-forward --count=40 --warmup-bars=5 --eval-bars=10 --step-bars=10
 ```
 
 ### Configuration
@@ -131,6 +137,17 @@ npm test           # Run foundation tests (node:test)
 - Metrics: starting capital, ending cash, ending position, ending equity (mark-to-market when a final mark exists, otherwise cash-only), realized P&L, unrealized when a mark exists, fees, completed SELL exits, win rate, max drawdown. `strategyRealizedPnl` is always null.
 - Run records are stored under `data/backtests/` and are never overwritten.
 - Synthetic test results do not imply profitability.
+
+### Phases 13–16 — Walk-forward, metrics quality, dataset report
+- Walk-forward: fixed-parameter chronological windows, independent capital, no parameter fitting.
+- `aggregatePnl` is unavailable across independent windows. Positive window counts are not robustness.
+- `buildDatasetReport` produces errors/warnings/info; `TIME_GAP` only when `expectedIntervalMs` is set.
+- Successful backtest and walk-forward results include additive `datasetReport`. Schema version remains 1.
+
+### Phase 17 — Research CLI
+- `src/research/cli.mjs` drives synthetic backtest/walk-forward via existing engines (no duplicated logic).
+- Flags: `--backtest`, `--walk-forward`, optional `--count`, `--capital`, window sizes, `--expected-interval-ms`.
+- Output is structured logs. Synthetic only. Not a claim of future performance.
 
 ### Safety
 - Paper trading only. No real orders or credentials.

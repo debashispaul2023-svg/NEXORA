@@ -1,22 +1,22 @@
 # Current State — Update After Every Approved Phase
 
 ## Current status
-- Phase: 16 — Dataset report attached to backtest and walk-forward results
-- Implementation status: Additive datasetReport on successful results. Execution, validation, and accounting unchanged.
-- Last verified repository root: /workspace/artifacts/NEXORA_FabInvests_Starter
-- Last verified commit: 1a7f33b8fee8d8609f6c9cf2cfed582d2877d29e (Phase 15, local; not pushed)
-- Tests: PASSED (170/170) this session
+- Phase: 17 — Documentation reconciliation + minimal synthetic research CLI
+- Implementation status: Research CLI reuses BacktestEngine and runWalkForward. Docs updated through Phase 17.
+- Last verified repository root: /home/workdir/artifacts/NEXORA_FabInvests_Starter
+- Last verified commit: verify with git log (Phase 16 reported as b149294 locally; may be ahead of origin)
+- Tests: run npm test after Phase 17 changes
 - Deployment: NOT CONFIGURED
 
 ## Current objective
-Phase 16 implementation in progress. Do not start Phase 17.
+Phase 17 complete when tests pass. Do not start Phase 18 automatically.
 
 ## Approved decisions
 - Paper trading only
 - Phase 1–9.1: foundation through audit remediation
 - Phase 10–14: deterministic backtest, validation, walk-forward, metric reliability
-- Phase 15: standalone dataset quality report
-- Phase 16: attach datasetReport to successful backtest and walk-forward results
+- Phase 15–16: dataset quality report (standalone then attached to results)
+- Phase 17: docs reconciliation + synthetic research CLI entry points
 
 ## Known limitations
 - End-of-bar fill model (signal and fill on candle t close). Not next-bar-open.
@@ -28,4 +28,4 @@ Phase 16 implementation in progress. Do not start Phase 17.
 - Symlink escape test remains NOT VERIFIED (EPERM).
 
 ## Next approved action
-Finish Phase 16 verification. Do not start Phase 17 automatically.
+Verify Phase 17 tests. Do not push or start Phase 18 without approval.

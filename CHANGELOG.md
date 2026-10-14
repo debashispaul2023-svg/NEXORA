@@ -127,4 +127,9 @@
   - expectedIntervalMs is optional. TIME_GAP remains a warning and does not fail a run.
   - Existing result fields, fills, metrics, and aggregatePnl are unchanged.
   - Backtest schema version remains 1. Legacy records without datasetReport remain readable.
-- No Phase 17 work performed.
+- Phase 17: Documentation reconciliation and synthetic research CLI.
+  - src/research/cli.mjs runs deterministic synthetic backtest/walk-forward via existing engines.
+  - Entry flags: --backtest, --walk-forward (optional --count, --capital, window sizes).
+  - CURRENT_STATE and README updated. Synthetic results do not imply profitability.
+  - No live data, no new dependencies, no learning.
+- No Phase 18 work performed.
