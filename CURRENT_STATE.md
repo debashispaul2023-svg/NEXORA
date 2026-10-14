@@ -1,31 +1,28 @@
 # Current State — Update After Every Approved Phase
 
 ## Current status
-- Phase: 20 — Strategy experiment tracking and learning foundation (hardened)
-- Implementation status: Registry, evaluation, learning records, and promotion gate hardened; tests expanded.
-- Last verified repository root: /home/workdir/artifacts/NEXORA_FabInvests_Starter
-- Last verified commit: 39d962e2014dc498db1c1717f2cee5d5581ac8f7 (Phase 19; Phase 20 uncommitted)
-- Tests (this session): experiments 13/13 pass; full suite 203/203 pass
-- Smoke: --check, --backtest --count=20, walk-forward, --paper --count=12 all exit 0
+- Phase: 21 — AI research agent (mock provider)
+- Implementation status: Hypotheses, proposal queue, AI memory notes, and CLI flags added.
+- Last verified repository root: /workspace/artifacts/NEXORA_FabInvests_Starter
+- Phase 20 pushed: f482c42e28eef34bd27d7a332648311d93007bbf
+- Tests this session: AI research 7/7; full suite 214/214
 - Deployment: NOT CONFIGURED
 
 ## Current objective
-Phase 20 hardening complete pending commit approval. Do not start Phase 21.
+Phase 21 implemented. Do not start Phase 22.
 
 ## Approved decisions
 - Paper trading only
-- Phase 1–19: foundation through paper session
-- Phase 20: experiment tracking and research-only promotion gate
+- Phase 20: experiment tracking and research-only promotion
+- Phase 21: mock AI research assistant; no live trading; no paid AI by default
 
 ## Known limitations
-- End-of-bar fill model. Strategy-level P&L unavailable. aggregatePnl unavailable.
-- Multi-process experiment writers are unsupported. Exactly-once across crashes is not claimed.
-- Registry durability matches snapshot class (tmp+fsync+rename); environmental EIO may still surface after bounded retry.
-- Learning records are evidence notes, not a trained model.
-- Promotion never enables live trading; missing metrics block promotion.
+- Mock provider only. External models are unavailable unless explicitly configured later.
+- AI output is untrusted and schema-validated. Missing provider does not fabricate responses.
+- Learning notes are interpretations, not model training.
+- Promotion never enables live trading.
+- Multi-process experiment writers unsupported.
 - Synthetic results do not imply profitability.
-- Alpha Vantage free tier is 25 requests/day. Compact daily history only. Not real-time.
-- Symlink escape test may skip under EPERM in some environments.
 
 ## Next approved action
-Commit Phase 20 only after explicit approval. Do not push or start Phase 21 without approval.
+Commit Phase 21. Do not start Phase 22 without approval.

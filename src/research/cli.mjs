@@ -4,6 +4,9 @@ import { runWalkForward } from '../backtest/walkforward.mjs';
 import { fetchValidatedDaily } from '../market-data/provider.mjs';
 import { runPaperSession } from '../paper/session.mjs';
 import { logger } from '../logger.mjs';
+import { getProviderStatus } from '../ai/provider.mjs';
+import { generateHypothesis, listHypotheses } from '../ai/agent.mjs';
+import { createProposal, listProposals, validateProposal } from '../ai/proposals.mjs';
 
 /**
  * Minimal synthetic research CLI.
@@ -38,6 +41,15 @@ export function parseResearchArgs(args) {
     backtest: args.includes('--backtest'),
     walkForward: args.includes('--walk-forward'),
     paper: args.includes('--paper'),
+    aiStatus: args.includes('--ai-status'),
+    hypotheses: args.includes('--hypotheses'),
+    listHypotheses: args.includes('--list-hypotheses'),
+    propose: args.includes('--propose'),
+    listProposals: args.includes('--list-proposals'),
+    validateProposal: args.includes('--validate-proposal'),
+    experimentId: null,
+    hypothesisId: null,
+    proposalId: null,
     count: 40,
     capital: 1000,
     slippageBps: 0,
@@ -68,6 +80,12 @@ export function parseResearchArgs(args) {
       flags.provider = arg.slice(11).trim().toLowerCase() || 'synthetic';
     } else if (arg.startsWith('--symbol=')) {
       flags.symbol = arg.slice(9).trim().toUpperCase();
+    } else if (arg.startsWith('--experiment-id=')) {
+      flags.experimentId = arg.slice(16).trim();
+    } else if (arg.startsWith('--hypothesis-id=')) {
+      flags.hypothesisId = arg.slice(16).trim();
+    } else if (arg.startsWith('--proposal-id=')) {
+      flags.proposalId = arg.slice(14).trim();
     }
   }
 
@@ -120,8 +138,59 @@ function printWalkForwardSummary(result) {
  * @param {{ initialVirtualCapital?: number }} [configCapital]
  */
 export async function runResearchCli(flags, configCapital = {}) {
-  if (!flags.backtest && !flags.walkForward && !flags.paper) {
+  const aiRequested = flags.aiStatus || flags.hypotheses || flags.listHypotheses
+    || flags.propose || flags.listProposals || flags.validateProposal;
+  if (!flags.backtest && !flags.walkForward && !flags.paper && !aiRequested) {
     return { ran: false };
+  }
+
+  if (flags.aiStatus) {
+    const status = getProviderStatus();
+    logger.info('AI provider status', { ...status, liveTradingEnabled: false });
+  }
+  if (flags.hypotheses) {
+    if (!flags.experimentId) throw new Error('--experiment-id is required for --hypotheses');
+    const result = await generateHypothesis(flags.experimentId);
+    logger.info('Hypothesis generation', {
+      ok: result.ok,
+      unavailable: result.unavailable === true,
+      id: result.hypothesis?.id || null,
+      duplicate: result.duplicate === true,
+      reason: result.reason || null,
+      liveTradingEnabled: false,
+    });
+  }
+  if (flags.listHypotheses) {
+    const items = listHypotheses();
+    logger.info('Hypotheses', { count: items.length, ids: items.map((h) => h.id) });
+  }
+  if (flags.propose) {
+    if (!flags.hypothesisId) throw new Error('--hypothesis-id is required for --propose');
+    const result = createProposal(flags.hypothesisId);
+    logger.info('Proposal created', {
+      id: result.proposal.id,
+      status: result.proposal.status,
+      duplicate: result.duplicate,
+      liveTradingEnabled: false,
+    });
+  }
+  if (flags.listProposals) {
+    const items = listProposals();
+    logger.info('Proposals', { count: items.length, ids: items.map((p) => p.id) });
+  }
+  if (flags.validateProposal) {
+    if (!flags.proposalId) throw new Error('--proposal-id is required for --validate-proposal');
+    const result = validateProposal(flags.proposalId);
+    logger.info('Proposal validated', {
+      id: result.id,
+      status: result.status,
+      reasons: result.validationReasons || [],
+      liveTradingEnabled: false,
+    });
+  }
+
+  if (!flags.backtest && !flags.walkForward && !flags.paper) {
+    return { ran: aiRequested, aiOnly: true };
   }
 
   const capital = flags.capital ?? configCapital.initialVirtualCapital ?? 1000;

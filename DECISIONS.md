@@ -104,3 +104,7 @@ Record material decisions here. Do not silently reverse a decision; propose a ch
 - Decision: Phase 20 adds a local experiment registry, evaluation wrapper, evidence-linked learning records, and a promotion gate. Existing engines are reused. Promotion is research-only and never enables live trading. Highest return alone is not sufficient. No external AI service is required. TradingAgents, Paperclip, and OpenBB informed separation of evaluation, approval, and data provenance; no framework was imported.
 - Hardening: atomic tmp+fsync+rename registry writes; same-process write mutex; stable fingerprints; missing provenance = unknown; malformed store throws; promotion treats missing evidence as blocking; liveTradingEnabled always false.
 - Status: Implemented and hardened. Offline tests only. Multi-process writers unsupported.
+
+## D-025 — Phase 21 AI research agent
+- Decision: Phase 21 adds a provider-neutral AI research layer with an offline mock provider. Hypotheses, proposals, and interpretation notes require completed experiments and are validated against stored evidence. Unavailable providers return an explicit unavailable state. No automatic orders. liveTradingEnabled remains false. No paid API is enabled by default. This is not model training.
+- Status: Implemented. Offline tests only.

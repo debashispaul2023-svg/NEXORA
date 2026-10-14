@@ -181,6 +181,13 @@ node src/index.mjs --backtest --provider=alphavantage --symbol=IBM
 - Promotion requires completion, dataset quality, sample size, out-of-sample (walk-forward), and finite drawdown evidence where required. Missing evidence blocks. `liveTradingEnabled` is always false.
 - No external AI model is required.
 
+### Phase 21 — AI research agent (mock)
+- Offline mock provider by default (`FABINVESTS_AI_PROVIDER=mock` or unset).
+- Set `FABINVESTS_AI_PROVIDER=none` to mark AI unavailable. No fabricated responses.
+- Commands: `--ai-status`, `--hypotheses --experiment-id=ID`, `--list-hypotheses`, `--propose --hypothesis-id=ID`, `--list-proposals`, `--validate-proposal --proposal-id=ID`.
+- Hypotheses and proposals do not submit orders or change strategy configuration.
+- AI memory notes are interpretations, not model training. Promotion remains research-only.
+
 ### Safety
 - Paper trading only. No real orders or credentials.
 - All paths resolved from verified project root and canonicalized with realpathSync (resists symlink escapes where creation is permitted).

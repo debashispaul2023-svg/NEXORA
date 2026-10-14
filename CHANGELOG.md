@@ -151,4 +151,9 @@
   - Promotion treats missing evidence as missing; liveTradingEnabled always false.
   - Learning records are idempotent per experimentId; provisional when sample insufficient.
   - Reuses existing backtest and walk-forward engines. No external AI model required.
-  - No Phase 21 work performed.
+- Phase 21: AI research agent (mock provider).
+  - Provider-neutral interface with offline mock and explicit unavailable state.
+  - Hypotheses, proposal queue, and AI memory notes linked to completed experiments.
+  - Schema validation against stored evidence. No automatic orders. liveTradingEnabled always false.
+  - CLI: --ai-status, --hypotheses, --list-hypotheses, --propose, --list-proposals, --validate-proposal.
+- No Phase 22 work performed.

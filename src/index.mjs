@@ -46,7 +46,9 @@ async function main() {
       process.exit(0);
     }
 
-    if (researchFlags.backtest || researchFlags.walkForward || researchFlags.paper) {
+    if (researchFlags.backtest || researchFlags.walkForward || researchFlags.paper
+      || researchFlags.aiStatus || researchFlags.hypotheses || researchFlags.listHypotheses
+      || researchFlags.propose || researchFlags.listProposals || researchFlags.validateProposal) {
       await runResearchCli(researchFlags, {
         initialVirtualCapital: config.capital.initialVirtualCapital,
       });
