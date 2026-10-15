@@ -41,6 +41,8 @@ npm test           # Run all tests (node:test, serial)
 
 # Local dashboard (paper only; binds 127.0.0.1; no authentication)
 node src/index.mjs --dashboard
+# Open http://127.0.0.1:3002 in a browser on the same machine.
+# Do not open index.html as a file or content:// URL — that has no backend.
 
 # Synthetic research (paper only; not a profitability claim)
 node src/index.mjs --backtest

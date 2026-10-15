@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Dashboard production UI: premium violet research terminal, same-origin API, honest empty states, mobile drawer, and a clear error when the page is opened as a local file instead of the server.
+
+## Unreleased
 - Dashboard visual redesign: violet research-terminal theme, DEMO/PAPER indicator, light metric cards, status bars from stored counts, mobile drawer, and structured empty/error states. No new metrics and no backend changes.
 
 ## Unreleased
