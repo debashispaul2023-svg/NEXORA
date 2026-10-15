@@ -56,8 +56,9 @@ function badge(text, kind = '') {
   return `<span class="badge ${kind}">${esc(text)}</span>`;
 }
 
-function metric(label, value, hint = '', tone = '') {
-  return `<article class="metric-card ${tone}">
+function metric(label, value, hint = '', tone = '', highlight = false) {
+  const cls = ['metric-card', tone, highlight ? 'highlight' : ''].filter(Boolean).join(' ');
+  return `<article class="${cls}">
     <div class="label">${esc(label)}</div>
     <div class="value">${esc(show(value))}</div>
     ${hint ? `<div class="hint">${hint}</div>` : ''}
@@ -119,23 +120,46 @@ async function renderOverview() {
   const exp = data.experiments || {};
   const ai = data.ai || {};
   const paper = data.paper || {};
+  const equity = paper.equity != null ? paper.equity : paper.capital;
+  const equityLabel = paper.equity != null ? 'Paper Equity' : 'Virtual Capital';
   content.innerHTML = `
-    <article class="hero">
-      <h2>NEXORA research terminal</h2>
-      <p>${badge('DEMO / PAPER MODE', 'ok')} ${badge('live trading disabled', 'ok')} ${badge('local only', 'ok')}</p>
-      <p class="muted">Mode ${esc(show(data.config?.mode))} · Virtual capital ${esc(show(data.config?.initialVirtualCapital))} ${esc(data.config?.currency || '')}</p>
-      <p class="muted">Real orders allowed: ${esc(show(data.config?.allowRealOrders))}. Numbers below come only from stored records.</p>
-    </article>
-    <div class="grid">
-      ${metric('Experiments', exp.total, exp.error ? 'Registry unavailable' : 'Stored records')}
-      ${metric('AI provider', ai.provider?.label || 'Unavailable', ai.provider?.mock ? badge('mock, not an LLM', 'mock') : '')}
-      ${metric('Paper status', paper.status, badge('simulated', 'ok'))}
-      ${metric('Market caches', data.market?.cacheCount, data.market?.alphavantageConfigured ? 'Alpha Vantage key configured' : 'No automatic fetch')}
+    <div class="metrics">
+      ${metric('Experiments', exp.total ?? 0, exp.error ? 'Registry unavailable' : 'Stored records')}
+      ${metric(equityLabel, equity != null ? equity : '—', paper.currency || 'USD · simulated', toneForNumber(paper.realizedPnl), true)}
+      ${metric('AI Provider', ai.provider?.label || 'Unavailable', ai.provider?.mock ? 'Mock · not external LLM' : '')}
+      ${metric('Market Caches', data.market?.cacheCount ?? 0, data.market?.alphavantageConfigured ? 'Key configured' : 'No auto-fetch')}
     </div>
-    ${card('Experiment status', exp.error ? errorBox(exp.error) : bars(exp.byStatus))}
-    ${card('Audit', data.audit?.error
-      ? errorBox(data.audit.error)
-      : `<p class="muted">Events: ${esc(show(data.audit?.stats?.total))} · Recent shown: ${esc(show(data.audit?.recentCount))}</p>`)}
+    <div class="dashboard-layout">
+      <div class="main-col">
+        <article class="panel">
+          <h2>Research Posture</h2>
+          <p class="muted">Mode ${esc(show(data.config?.mode))} · Paper trading only · Live orders disabled</p>
+          <div class="chart-placeholder">
+            ${exp.total > 0
+              ? 'Experiment status distribution'
+              : 'No equity curve available. Paper mode — no live market history stored.'}
+          </div>
+          ${exp.error ? errorBox(exp.error) : bars(exp.byStatus)}
+        </article>
+        ${card('Audit Summary', data.audit?.error
+          ? errorBox(data.audit.error)
+          : `<p class="muted">Total events: ${esc(show(data.audit?.stats?.total))} · Recent: ${esc(show(data.audit?.recentCount))}</p>
+             <p class="note">All values from stored records only. No fabricated metrics.</p>`)}
+      </div>
+      <div class="side-col">
+        ${card('Paper Account', `
+          <p>${badge('Simulated', 'ok')} ${badge('Live disabled', 'ok')}</p>
+          <p>Status: <strong>${esc(show(paper.status))}</strong></p>
+          ${paper.message ? `<p class="muted">${esc(paper.message)}</p>` : ''}
+          ${paper.cash != null ? `<p class="note">Cash ${esc(paper.cash)} · Pos ${esc(paper.positionQty)}</p>` : ''}
+          <p class="note">${esc(paper.note || 'All execution is simulated.')}</p>
+        `)}
+        ${card('Safety', `
+          <p>Real orders: <strong>${esc(show(data.config?.allowRealOrders))}</strong></p>
+          <p class="note">Loopback only · No authentication · Paper trading enforced</p>
+        `)}
+      </div>
+    </div>
   `;
 }
 
@@ -151,7 +175,7 @@ async function renderMarket() {
       <td>${c.quality ? esc(`ok=${c.quality.ok} e=${c.quality.errorCount} w=${c.quality.warningCount}`) : 'Unavailable'}</td>
     </tr>`).join('');
   content.innerHTML = `
-    <div class="grid">
+    <div class="metrics">
       ${metric('Default provider', data.defaultProvider, badge('offline synthetic', 'ok'))}
       ${metric('Alpha Vantage', av.keyConfigured ? 'Configured' : 'Not configured', av.realtime === false ? 'Daily, not real-time' : '')}
       ${metric('Auto fetch', data.automaticFetch === false ? 'Off' : show(data.automaticFetch), 'Dashboard does not fetch on open')}
@@ -218,52 +242,39 @@ function experimentDetail(exp) {
     <article class="hero">
       <h2>Experiment ${esc(exp.id)}</h2>
       <p>${badge(exp.status || 'unknown')} ${badge(exp.dataSource || 'unknown')}</p>
-      <p class="muted">In-sample metrics are not out-of-sample results. Missing fields stay Unavailable.</p>
     </article>
-    <article class="card">
-      <dl class="kv">
-        <dt>Strategy</dt><dd>${esc(show(exp.strategyId))} ${esc(exp.strategyVersion || '')}</dd>
-        <dt>Method</dt><dd>${esc(show(exp.evaluationMethod))}</dd>
-        <dt>Fingerprint</dt><dd>${esc(show(exp.configFingerprint))}</dd>
-        <dt>Sample</dt><dd>${esc(show(exp.sampleStatus))}</dd>
-        <dt>Dataset</dt><dd>${exp.datasetReportSummary ? esc(JSON.stringify(exp.datasetReportSummary)) : 'Unavailable'}</dd>
-        <dt>Error</dt><dd>${esc(show(exp.error))}</dd>
-        <dt>Note</dt><dd>${esc(show(exp.note))}</dd>
-      </dl>
-    </article>
-    ${card('Metrics', exp.metrics ? `<pre>${esc(JSON.stringify(exp.metrics, null, 2))}</pre>` : empty('No metrics recorded for this experiment.'))}
+    <div class="kv">
+      <dt>Strategy</dt><dd>${esc(exp.strategyId)} ${esc(exp.strategyVersion)}</dd>
+      <dt>Method</dt><dd>${esc(show(exp.evaluationMethod))}</dd>
+      <dt>Created</dt><dd>${esc(show(exp.createdAt))}</dd>
+      <dt>Finished</dt><dd>${esc(show(exp.finishedAt))}</dd>
+    </div>
+    ${exp.metrics ? card('Metrics', `<pre style="white-space:pre-wrap;font-size:12px;margin:0">${esc(JSON.stringify(exp.metrics, null, 2))}</pre>`) : ''}
+    <p><a href="#experiments">← Back to list</a></p>
   `;
 }
 
 async function renderAi() {
   const status = await api('/api/ai');
   const hyps = await api('/api/hypotheses');
-  const provider = status.provider || {};
-  const rows = (hyps.hypotheses || []).map((h) => `
-    <tr>
-      <td>${esc(h.id)}</td>
-      <td>${esc(show(h.experimentId))}</td>
-      <td>${h.mock ? badge('mock', 'mock') : badge(h.provider || 'unknown')}</td>
-      <td>${esc(show(h.researchQuestion))}</td>
-      <td>${esc(show(h.uncertainty))}</td>
-    </tr>`).join('');
   content.innerHTML = `
-    <article class="hero">
-      <h2>${esc(provider.label || 'Unavailable')}</h2>
-      <p>${provider.mock ? badge('mock provider — not an external LLM', 'mock') : badge(provider.available ? 'available' : 'unavailable', provider.available ? 'ok' : 'bad')}</p>
-      <p class="muted">Available: ${esc(show(provider.available))} · Paid: ${esc(provider.paid ?? false)} · Live trading: disabled</p>
-      ${provider.reason ? `<p class="warn">${esc(provider.reason)}</p>` : ''}
-    </article>
-    <div class="grid">
-      ${metric('Hypotheses', status.hypothesisCount)}
-      ${metric('Proposals', status.proposalCount)}
-      ${metric('Memory notes', status.memoryCount, 'Interpretations, not model training')}
+    <div class="metrics">
+      ${metric('Provider', status.provider?.label || 'Unavailable', status.provider?.mock ? badge('mock', 'mock') : '')}
+      ${metric('Hypotheses', status.hypothesisCount, status.hypothesesError ? 'Error' : 'Stored')}
+      ${metric('Proposals', status.proposalCount, status.proposalsError ? 'Error' : 'Stored')}
+      ${metric('Memory notes', status.memoryCount)}
     </div>
+    ${card('Provider details', `
+      <p class="note">Available: ${esc(show(status.provider?.available))} · Realtime: ${esc(show(status.provider?.realtime))} · Paid: ${esc(show(status.provider?.paid))}</p>
+      <p class="note">Live trading enabled: ${esc(show(status.liveTradingEnabled))}</p>
+    `)}
     ${card('Hypotheses', !hyps.ok
       ? errorBox(hyps.error)
-      : (rows
-        ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Experiment</th><th>Provider</th><th>Question</th><th>Uncertainty</th></tr></thead><tbody>${rows}</tbody></table></div>`
-        : empty('No hypotheses. An unavailable provider does not invent output.')))}
+      : ((hyps.hypotheses || []).length
+        ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Status</th><th>Created</th></tr></thead><tbody>
+            ${hyps.hypotheses.map((h) => `<tr><td>${esc(h.id)}</td><td>${badge(h.status || 'unknown')}</td><td>${esc(show(h.createdAt))}</td></tr>`).join('')}
+          </tbody></table></div>`
+        : empty('No hypotheses stored.')))}
   `;
 }
 
@@ -273,24 +284,19 @@ async function renderProposals() {
     content.innerHTML = errorBox(data.error || 'Proposals unavailable');
     return;
   }
-  const rows = (data.proposals || []).map((p) => `
-    <tr>
-      <td>${esc(p.id)}</td>
-      <td>${badge(p.status, p.status === 'validated' ? 'ok' : p.status === 'rejected' ? 'bad' : 'mock')}</td>
-      <td>${esc(show(p.hypothesisId))}</td>
-      <td>${esc((p.experimentIds || []).join(', ') || 'none')}</td>
-      <td>${esc((p.validationReasons || []).join(', ') || '—')}</td>
-      <td><button class="btn secondary" data-validate="${esc(p.id)}">Validate</button></td>
-    </tr>`).join('');
-  content.innerHTML = `
-    ${card('Proposal queue', `
-      <p class="muted">Validation is deterministic. It does not execute trades, change strategy configuration, or bypass risk rules.</p>
-      ${rows
-        ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Status</th><th>Hypothesis</th><th>Experiments</th><th>Reasons</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
-        : empty('No proposals.')}
-      <div id="validateResult"></div>
-    `)}
-  `;
+  const proposals = data.proposals || [];
+  content.innerHTML = proposals.length
+    ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Status</th><th>Strategy</th><th>Created</th><th></th></tr></thead><tbody>
+        ${proposals.map((p) => `<tr>
+          <td>${esc(p.id)}</td>
+          <td>${badge(p.status || 'unknown')}</td>
+          <td>${esc(show(p.strategyId))}</td>
+          <td>${esc(show(p.createdAt))}</td>
+          <td><button class="btn" data-validate="${esc(p.id)}">Validate</button></td>
+        </tr>`).join('')}
+      </tbody></table></div>
+      <div id="validateResult"></div>`
+    : empty('No proposals. Empty is a valid state. Validation remains deterministic and gated.');
   document.querySelectorAll('[data-validate]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       btn.disabled = true;
@@ -309,12 +315,12 @@ async function renderPaper() {
   content.innerHTML = `
     <article class="hero">
       <h2>Simulated paper account</h2>
-      <p>${badge('DEMO / PAPER MODE', 'ok')} ${badge('live trading disabled', 'ok')}</p>
+      <p>${badge('Paper Mode', 'ok')} ${badge('Live trading disabled', 'ok')}</p>
       <p>Status: <strong>${esc(show(data.status))}</strong></p>
       ${data.error ? errorBox(data.error) : ''}
       ${data.message ? `<p class="muted">${esc(data.message)}</p>` : ''}
     </article>
-    <div class="grid">
+    <div class="metrics">
       ${metric('Cash', data.cash, data.currency || 'virtual')}
       ${metric('Position', data.positionQty)}
       ${metric('Equity', data.equity, '', toneForNumber(data.equity))}
